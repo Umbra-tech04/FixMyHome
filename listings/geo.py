@@ -1,3 +1,5 @@
+import re
+import unicodedata
 from math import asin, ceil, cos, radians, sin, sqrt
 
 from accounts.models import MasterProfile
@@ -13,8 +15,34 @@ CITIES = {
     "Óbecse": (45.6167, 20.0500),
     "Zombor": (45.7733, 19.1122),
     "Újvidék": (45.2671, 19.8335),
+    "Ada": (45.8028, 20.1289),
+    "Mohol": (45.7639, 20.1303),
+    "Csantavér": (45.9183, 19.7703),
+    "Kishegyes": (45.7069, 19.6644),
+    "Horgos": (46.1547, 19.9706),
+    "Törökkanizsa": (46.0500, 20.1000),
+    "Szenttamás": (45.5472, 19.7958),
+    "Temerin": (45.4081, 19.8867),
 }
-_CITIES_LOWER = {name.lower(): coords for name, coords in CITIES.items()}
+# Szerb (és rövid magyar) nevek → a CITIES kulcsa. Ékezet nélkül is működik (lásd _normalize).
+ALIASES = {
+    "Subotica": "Szabadka", "Palić": "Palics", "Senta": "Zenta", "Bečej": "Óbecse", "Becse": "Óbecse",
+    "Bačka Topola": "Topolya", "Kanjiža": "Magyarkanizsa", "Sombor": "Zombor", "Novi Sad": "Újvidék",
+    "Mol": "Mohol", "Čantavir": "Csantavér", "Mali Iđoš": "Kishegyes", "Horgoš": "Horgos",
+    "Novi Kneževac": "Törökkanizsa", "Srbobran": "Szenttamás",
+}
+
+
+def _normalize(text):
+    """Kisbetű, ékezet nélkül ("Bečej" → "becej", "Mali Iđoš" → "mali idos")."""
+    text = unicodedata.normalize("NFKD", (text or "").replace("đ", "d").replace("Đ", "D"))
+    return "".join(c for c in text if not unicodedata.combining(c)).strip().lower()
+
+
+_LOOKUP = {_normalize(name): coords for name, coords in CITIES.items()}
+_LOOKUP.update({_normalize(alias): CITIES[name] for alias, name in ALIASES.items()})
+# Hosszabb név előbb, hogy pl. "Szabadka és környéke" ne az "Ada"-ra illeszkedjen.
+_LOOKUP_ORDER = sorted(_LOOKUP, key=len, reverse=True)
 ZIP_CODES = {
     "24000": "Szabadka", "24413": "Palics", "24400": "Zenta", "24300": "Topolya",
     "24420": "Magyarkanizsa", "21220": "Óbecse", "25000": "Zombor", "21000": "Újvidék",
@@ -26,15 +54,15 @@ EARTH_RADIUS_KM = 6371.0088
 
 def city_coords(text):
     """Település, irányítószám vagy ezeket tartalmazó szöveg ("Szabadka és környéke", "24000") koordinátája."""
-    text = (text or "").strip().lower()
+    text = _normalize(text)
     if not text:
         return None
-    if text in _CITIES_LOWER:
-        return _CITIES_LOWER[text]
-    # TODO(shortcut): csak a CITIES települései és irányítószámai ismertek; tetszőleges címhez geokódoló kell (a frontend JS vagy Nominatim).
-    for name, coords in _CITIES_LOWER.items():
-        if name in text:
-            return coords
+    if text in _LOOKUP:
+        return _LOOKUP[text]
+    # TODO(shortcut): csak a CITIES települései, szerb nevei és irányítószámai ismertek; tetszőleges címhez geokódoló kell (a frontend JS vagy Nominatim).
+    for name in _LOOKUP_ORDER:
+        if re.search(rf"\b{re.escape(name)}\b", text):
+            return _LOOKUP[name]
     for zip_code, name in ZIP_CODES.items():
         if zip_code in text:
             return CITIES[name]

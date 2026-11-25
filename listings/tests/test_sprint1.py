@@ -243,3 +243,15 @@ class DemoFlowEndToEndTests(TestCase):
         self.client.force_login(late)
         self.client.post(reverse("listings:apply", args=[ad.pk]), {"message": "Én is mennék."})
         self.assertFalse(ad.applications.filter(master=late).exists())
+
+
+class SerbianCityNameTests(SimpleTestCase):
+    def test_serbian_names_with_and_without_accents(self):
+        from listings.geo import city_coords
+        self.assertEqual(city_coords("Senta"), CITIES["Zenta"])
+        self.assertEqual(city_coords("Bečej"), city_coords("Becej"))
+        self.assertEqual(city_coords("Becej"), CITIES["Óbecse"])
+        self.assertEqual(city_coords("mali idos"), CITIES["Kishegyes"])
+        self.assertEqual(city_coords("Novi Kneževac"), CITIES["Törökkanizsa"])
+        self.assertEqual(city_coords("Szabadka és környéke"), CITIES["Szabadka"])  # nem az "Ada"
+        self.assertEqual(city_coords("Ujvidek"), CITIES["Újvidék"])
