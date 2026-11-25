@@ -119,18 +119,29 @@
 
   /* ---------- 3) Szolgáltatásaim ---------- */
   const TRADES = ['Villanyszerelő', 'Vízszerelő', 'Festő', 'Asztalos', 'Burkoló', 'Lakatos'];
-  const PRICES = { low: 'Olcsó · 2000 din/órától', medium: 'Közepes · 3000 din/órától', high: 'Drága · 5000 din/órától' };
+  // Pontos ár: összeg (din) + egység + opcionális "-tól". A megjelenítés ezres tagolással: 3 500 DIN / ÓRÁTÓL.
+  const UNIT = { hour: '/ ÓRA', m2: '/ M²', visit: '/ ALKALOM', job: '/ MUNKA' };
+  const UNIT_FROM = { hour: '/ ÓRÁTÓL', m2: '/ M²-TŐL', visit: '/ ALKALOMTÓL', job: '/ MUNKÁTÓL' };
+  const PRICE_MIN = 100, PRICE_MAX = 1000000;
+  const thousands = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+  const priceText = s => `${thousands(s.amount)} DIN ${(s.from ? UNIT_FROM : UNIT)[s.unit]}`;
+  // null: üres; NaN: nem egész szám; különben az összeg. A szóközt (ezres tagolás) elfogadjuk.
+  const parseAmount = raw => {
+    const t = String(raw).replace(/[\s\u00a0\u202f]/g, '');
+    if (!t) return null;
+    return /^\d+$/.test(t) ? Number(t) : NaN;
+  };
   let services = [
-    { id: 1, name: 'Háztartási villanyszerelés', trade: 'Villanyszerelő', desc: 'Konnektorok, kapcsolók, lámpák szerelése, hibakeresés.', price: 'medium', area: 'Szabadka és 10 km', active: true },
-    { id: 2, name: 'Biztosítéktábla csere', trade: 'Villanyszerelő', desc: 'Régi olvadóbiztosítékos tábla cseréje kismegszakítósra.', price: 'high', area: 'Szabadka, Palics', active: true },
-    { id: 3, name: 'Okosotthon-kapcsolók telepítése', trade: 'Villanyszerelő', desc: 'Wi-Fi-s kapcsolók és redőnyvezérlők beszerelése, beállítása.', price: 'high', area: 'Szabadka', active: false },
+    { id: 1, name: 'Háztartási villanyszerelés', trade: 'Villanyszerelő', desc: 'Konnektorok, kapcsolók, lámpák szerelése, hibakeresés.', amount: 3500, unit: 'hour', from: true, area: 'Szabadka és 10 km', active: true },
+    { id: 2, name: 'Biztosítéktábla csere', trade: 'Villanyszerelő', desc: 'Régi olvadóbiztosítékos tábla cseréje kismegszakítósra.', amount: 15000, unit: 'job', from: false, area: 'Szabadka, Palics', active: true },
+    { id: 3, name: 'Okosotthon-kapcsolók telepítése', trade: 'Villanyszerelő', desc: 'Wi-Fi-s kapcsolók és redőnyvezérlők beszerelése, beállítása.', amount: 5000, unit: 'visit', from: true, area: 'Szabadka', active: false },
   ];
   let editing = null;
   const toast = msg => window.V2?.toast?.(msg);
 
   const svcRow = (s, i) => `
     <li class="svc-row cat-${slug(s.trade)}${s.active ? '' : ' paused'}${editing === s.id ? ' editing' : ''}" style="--i:${i}" data-id="${s.id}">
-      <div><span class="row-trade">${esc(s.trade)}</span><h3>${esc(s.name)}</h3><p class="svc-meta"><b>${esc(PRICES[s.price])}</b> · ${esc(s.area)}</p></div>
+      <div><span class="row-trade">${esc(s.trade)}</span><h3>${esc(s.name)}</h3><p class="svc-meta"><b>${esc(priceText(s))}</b> · ${esc(s.area)}</p></div>
       <div class="svc-side">
         <button type="button" class="switch" role="switch" aria-checked="${s.active}" data-toggle><span class="knob" aria-hidden="true"></span>${s.active ? 'KÖZZÉTÉVE' : 'SZÜNETEL'}</button>
         <div class="svc-actions"><button type="button" class="link-arrow" data-edit>SZERKESZTÉS</button><button type="button" class="svc-del" data-del>TÖRLÉS</button></div>
@@ -139,6 +150,7 @@
 
   function renderServices() {
     $('#svc-list').innerHTML = services.length ? services.map(svcRow).join('') : '<li class="empty">MÉG NINCS SZOLGÁLTATÁSOD – A JOBB OLDALI ŰRLAPPAL HIRDESS EGYET.</li>';
+    requestAnimationFrame(() => $('#svc-list').classList.add('ready'));  // a felcsúszás csak az első rajzolásnál
     const active = services.filter(s => s.active).length;
     $('#svc-count').textContent = `${services.length} SZOLGÁLTATÁS · ${active} KÖZZÉTÉVE`;
   }
@@ -148,11 +160,27 @@
     editing = s ? s.id : null;
     f.reset();
     clearErrors(f);
-    if (s) { f.name.value = s.name; f.desc.value = s.desc; f.area.value = s.area; f.trade.value = s.trade; f.price.value = s.price; }
+    if (s) {
+      f.name.value = s.name; f.desc.value = s.desc; f.area.value = s.area; f.trade.value = s.trade;
+      f.price.value = thousands(s.amount); f.unit.value = s.unit; f.from.checked = s.from;
+    }
+    updatePreview();
     $('#svc-form-title').textContent = s ? 'SZOLGÁLTATÁS SZERKESZTÉSE' : 'ÚJ SZOLGÁLTATÁS';
     $('#svc-submit').textContent = s ? 'MENTÉS' : 'KÖZZÉTÉTEL';
     $('#svc-cancel').hidden = !s;
     renderServices();
+  }
+
+  function priceError(raw) {
+    const n = parseAmount(raw);
+    if (n === null) return 'Add meg az árat.';
+    if (Number.isNaN(n)) return 'Csak egész számot írj (pl. 3500).';
+    if (n < PRICE_MIN || n > PRICE_MAX) return 'Az ár 100 és 1 000 000 din között legyen.';
+    return '';
+  }
+  function updatePreview() {
+    const f = $('#svc-form'), n = parseAmount(f.price.value);
+    $('#price-preview').textContent = n && !Number.isNaN(n) ? `Így látszik: ${priceText({ amount: n, unit: f.unit.value, from: f.from.checked })}` : '';
   }
 
   const clearErrors = f => { $$('.err', f).forEach(e => e.remove()); $$('.has-err', f).forEach(e => e.classList.remove('has-err')); };
@@ -162,7 +190,7 @@
       [f.name, !f.name.value.trim(), f.name.dataset.msg],
       [$('#trade-tiles'), !f.trade.value, 'Válassz szakmát.'],
       [f.desc, !f.desc.value.trim(), f.desc.dataset.msg],
-      [$('.prices', f), !f.price.value, 'Válassz árkategóriát.'],
+      [f.price, priceError(f.price.value), priceError(f.price.value)],
       [f.area, !f.area.value.trim(), f.area.dataset.msg],
     ];
     let first = null;
@@ -183,13 +211,16 @@
     f.addEventListener('submit', e => {
       e.preventDefault();
       if (!validate(f)) return;
-      const data = { name: f.name.value.trim(), trade: f.trade.value, desc: f.desc.value.trim(), price: f.price.value, area: f.area.value.trim() };
+      const data = { name: f.name.value.trim(), trade: f.trade.value, desc: f.desc.value.trim(), area: f.area.value.trim(),
+                     amount: parseAmount(f.price.value), unit: f.unit.value, from: f.from.checked };
       if (editing) Object.assign(services.find(s => s.id === editing), data);
       else services.unshift({ id: Date.now(), active: true, ...data });
       toast(editing ? 'Változások mentve.' : 'Szolgáltatás közzétéve.');
       fillForm(null);
     });
     $('#svc-cancel').addEventListener('click', () => fillForm(null));
+    f.addEventListener('input', e => { if (e.target.matches('[name=price], [name=unit], [name=from]')) updatePreview(); });
+    f.price.addEventListener('blur', () => { const n = parseAmount(f.price.value); if (n && !Number.isNaN(n)) f.price.value = thousands(n); });
     list.addEventListener('click', e => {
       const row = e.target.closest('.svc-row'); if (!row) return;
       const s = services.find(x => x.id === +row.dataset.id);

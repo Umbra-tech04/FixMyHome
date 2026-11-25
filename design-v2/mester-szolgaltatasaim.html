@@ -16,13 +16,18 @@
         <div class="field"><label for="s-name">Megnevezés</label><input id="s-name" name="name" placeholder="Pl. Háztartási villanyszerelés" data-msg="Add meg a szolgáltatás nevét."></div>
         <fieldset class="field svc-trades"><legend class="label">Szakma</legend><div class="tiles" id="trade-tiles"></div></fieldset>
         <div class="field"><label for="s-desc">Leírás</label><textarea id="s-desc" name="desc" placeholder="Mit vállalsz pontosan?" data-msg="Írd le, mit tartalmaz a szolgáltatás."></textarea></div>
-        <fieldset class="field"><legend class="label">Árkategória</legend>
-          <div class="prices">
-            <label><input type="radio" name="price" value="low"><b>OLCSÓ</b><small>2000 din/órától</small></label>
-            <label><input type="radio" name="price" value="medium"><b>KÖZEPES</b><small>3000 din/órától</small></label>
-            <label><input type="radio" name="price" value="high"><b>DRÁGA</b><small>5000 din/órától</small></label>
+        <div class="field svc-price">
+          <label for="s-price">Ár</label>
+          <div class="price-input"><input id="s-price" name="price" inputmode="numeric" autocomplete="off" placeholder="3 500" aria-describedby="price-preview"><span class="price-cur" aria-hidden="true">DIN</span></div>
+          <div class="seg-units" role="radiogroup" aria-label="Mire vonatkozik az ár">
+            <label><input type="radio" name="unit" value="hour" checked><span>/ ÓRA</span></label>
+            <label><input type="radio" name="unit" value="m2"><span>/ M²</span></label>
+            <label><input type="radio" name="unit" value="visit"><span>/ ALKALOM</span></label>
+            <label><input type="radio" name="unit" value="job"><span>/ MUNKA</span></label>
           </div>
-        </fieldset>
+          <label class="from-toggle"><input type="checkbox" name="from"><span class="knob" aria-hidden="true"></span>-TÓL <small>(legalább ennyi)</small></label>
+          <p class="price-preview" id="price-preview" aria-live="polite"></p>
+        </div>
         <div class="field"><label for="s-area">Hol dolgozol?</label><input id="s-area" name="area" placeholder="Pl. Szabadka és 10 km" data-msg="Add meg, hol vállalsz munkát."></div>
         <button class="bar-btn" type="submit" id="svc-submit">KÖZZÉTÉTEL</button>
         <button class="link-arrow svc-cancel" type="button" id="svc-cancel" hidden>MÉGSE, ÚJ SZOLGÁLTATÁS</button>
