@@ -8,7 +8,9 @@
 <body>
   <header>
     <a href="{% url 'home' %}"><strong>MesterKereső</strong></a>
-    {% block nav %}{% endblock %}
+    {% block nav %}
+      <nav><a href="{% url 'register' %}">Regisztráció</a></nav>
+    {% endblock %}
   </header>
   <main>
     {% block content %}{% endblock %}
