@@ -193,3 +193,53 @@ class LocationLookupTests(TestCase):
             user=user, profession=Category.objects.get(name="Festő"), service_area="Palics és környéke", contact="x",
         )
         self.assertEqual([p.user for p in nearby_masters(*CITIES["Szabadka"], 10)], [user])
+
+
+class DemoFlowEndToEndTests(TestCase):
+    """A bemutató fő útja egyben: hirdetés → jelentkezés → kiválasztás → Munkáim."""
+
+    def test_full_demo_flow(self):
+        customer = User.objects.create_user(email="anna@example.com", password="Jelszo-12345", name="Anna", role=Role.USER)
+        electrician = make_master("peter@example.com", profession="Villanyszerelő", city="Szabadka")
+        rival = make_master("gabor@example.com", profession="Villanyszerelő", city="Palics")
+        villany = Category.objects.get(name="Villanyszerelő")
+
+        # 1) A felhasználó belép, és hirdetést ad fel.
+        response = self.client.post(reverse("login"), {"username": "anna@example.com", "password": "Jelszo-12345"})
+        self.assertEqual(response.status_code, 302)
+        response = self.client.post(reverse("listings:ad_create"), {
+            "title": "Nincs áram a konyhában", "description": "Lecsap a biztosíték.",
+            "category": villany.pk, "location_text": "Szabadka",
+        })
+        ad = Ad.objects.get(title="Nincs áram a konyhában")
+        self.assertRedirects(response, reverse("listings:ad_detail", args=[ad.pk]))
+        self.assertEqual(ad.status, Ad.Status.OPEN)
+
+        # 2) A villanyszerelő látja a környékbeli hirdetések között, és jelentkezik.
+        self.client.force_login(electrician)
+        self.assertContains(self.client.get(reverse("listings:master_ads")), "Nincs áram a konyhában")
+        self.client.post(reverse("listings:apply", args=[ad.pk]), {"message": "Ma délután ráérek."})
+        self.client.force_login(rival)
+        self.client.post(reverse("listings:apply", args=[ad.pk]), {"message": "Holnap mehetek."})
+        self.assertEqual(ad.applications.count(), 2)
+
+        # 3) A felhasználó látja a jelentkezőket, és kiválasztja a villanyszerelőt.
+        self.client.force_login(customer)
+        detail = self.client.get(reverse("listings:ad_detail", args=[ad.pk]))
+        self.assertContains(detail, "Ma délután ráérek.")
+        self.assertContains(detail, "Függőben")
+        chosen = ad.applications.get(master=electrician)
+        self.client.post(reverse("listings:choose_master", args=[ad.pk, chosen.pk]))
+        ad.refresh_from_db()
+        self.assertEqual(ad.status, Ad.Status.IN_PROGRESS)
+        self.assertEqual(ad.chosen_master, electrician)
+        self.assertEqual(ad.applications.get(master=rival).status, "rejected")
+        self.assertContains(self.client.get(reverse("listings:ad_detail", args=[ad.pk])), "Elutasítva")
+
+        # 4) A munka megjelenik a mester Munkáim oldalán; új jelentkezés már nem fogadható.
+        self.client.force_login(electrician)
+        self.assertContains(self.client.get(reverse("listings:my_jobs")), "Nincs áram a konyhában")
+        late = make_master("kesve@example.com", profession="Villanyszerelő")
+        self.client.force_login(late)
+        self.client.post(reverse("listings:apply", args=[ad.pk]), {"message": "Én is mennék."})
+        self.assertFalse(ad.applications.filter(master=late).exists())

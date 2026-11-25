@@ -7,14 +7,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
-  <link rel="stylesheet" id="theme-css" href="{% static 'css/themes/a-hivis.css' %}">
+  <link rel="stylesheet" id="theme-css" href="{% static 'css/themes/a-hivis.css' %}">{# JS nélkül ez a téma; a JS az FMH_DEFAULT_THEME-et használja #}
   <link rel="stylesheet" href="{% static 'css/django.css' %}">
   <script>
     // Téma még az első rajzolás előtt (ugyanaz a localStorage-kulcs, mint a design/app.js-ben), hogy ne villanjon.
     window.FMH_THEMES = { a: "{% static 'css/themes/a-hivis.css' %}", b: "{% static 'css/themes/b-acel.css' %}", c: "{% static 'css/themes/c-brutal.css' %}" };
+    window.FMH_DEFAULT_THEME = "a";  // az alapértelmezett téma: egyetlen helyen kell átírni
     (function () {
       var theme = localStorage.getItem("fmh-theme");
-      if (!window.FMH_THEMES[theme]) theme = "a";
+      if (!window.FMH_THEMES[theme]) theme = window.FMH_DEFAULT_THEME;
       document.getElementById("theme-css").href = window.FMH_THEMES[theme];
       document.documentElement.dataset.theme = theme;
     })();
