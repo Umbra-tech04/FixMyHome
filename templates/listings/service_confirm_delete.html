@@ -2,7 +2,7 @@
 {% block title %}Szolgáltatás törlése{% endblock %}
 {% block content %}
   <h1 class="page-title">Szolgáltatás törlése</h1>
-  <form method="post" class="card">
+  <form method="post" class="card" data-confirm="Biztosan törlöd: {{ service.title }}?">
     {% csrf_token %}
     <p>Biztosan törlöd: <strong>{{ service.title }}</strong>? Ez nem vonható vissza.</p>
     <div class="toolbar">

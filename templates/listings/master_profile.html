@@ -6,6 +6,7 @@
     {% csrf_token %}
     {% include "listings/_form_fields.html" %}
     {% include "listings/_cities_datalist.html" %}
+    <button type="button" class="btn btn-secondary" data-geolocate>Hol vagyok?</button>
     <button type="submit" class="btn btn-primary">Mentés</button>
   </form>
 {% endblock %}

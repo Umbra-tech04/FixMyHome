@@ -1,9 +1,27 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="hu">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}MesterKereső{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" id="theme-css" href="{% static 'css/themes/a-hivis.css' %}">
+  <script>
+    // Téma még az első rajzolás előtt (ugyanaz a localStorage-kulcs, mint a design/app.js-ben), hogy ne villanjon.
+    window.FMH_THEMES = {
+      a: "{% static 'css/themes/a-hivis.css' %}", b: "{% static 'css/themes/b-workshop.css' %}",
+      c: "{% static 'css/themes/c-muhely.css' %}", d: "{% static 'css/themes/d-ejszakai.css' %}"
+    };
+    (function () {
+      var theme = localStorage.getItem("fmh-theme");
+      if (!window.FMH_THEMES[theme]) theme = "a";
+      document.getElementById("theme-css").href = window.FMH_THEMES[theme];
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
   <header>
@@ -41,5 +59,13 @@
     {% endif %}
     {% block content %}{% endblock %}
   </main>
+  <script>
+    // Natív megerősítés a [data-confirm] formokra; ha a fixmyhome.js saját modált ad, állítsa: window.FMH_CONFIRM = true.
+    document.addEventListener("submit", function (event) {
+      var text = event.target.dataset && event.target.dataset.confirm;
+      if (text && !window.FMH_CONFIRM && !window.confirm(text)) event.preventDefault();
+    });
+  </script>
+  <script src="{% static 'js/fixmyhome.js' %}" defer></script>
 </body>
 </html>

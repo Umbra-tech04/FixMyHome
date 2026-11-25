@@ -34,7 +34,7 @@ class MultipleImageInput(forms.ClearableFileInput):
 
 class MultipleImageField(forms.ImageField):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", MultipleImageInput(attrs={"accept": "image/*"}))
+        kwargs.setdefault("widget", MultipleImageInput(attrs={"accept": "image/*", "data-preview": ""}))
         super().__init__(*args, **kwargs)
 
     def clean(self, data, initial=None):
@@ -52,6 +52,10 @@ class AdForm(forms.ModelForm):
         fields = ["title", "description", "category", "location_text", "latitude", "longitude"]
         labels = {"title": "Cím", "description": "Leírás", "category": "Kategória", "location_text": "Település"}
         widgets = {"location_text": CITY_INPUT, "latitude": forms.HiddenInput(), "longitude": forms.HiddenInput()}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["category"].empty_label = "Válassz…"
 
     def clean(self):
         cleaned = super().clean()

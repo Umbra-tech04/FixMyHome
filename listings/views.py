@@ -14,7 +14,7 @@ from accounts.models import MasterProfile, Role
 from accounts.permissions import role_required
 from listings import geo
 from listings.forms import AdForm, ApplicationForm, LocationForm, MasterProfileForm, ServiceListingForm
-from listings.models import Ad, Application, ServiceListing
+from listings.models import Ad, Application, Category, ServiceListing
 
 
 def _radius(request, default):
@@ -34,7 +34,7 @@ def _session_location(request):
 
 @role_required(Role.USER)
 def ad_create(request):
-    form = AdForm(request.POST or None, request.FILES or None)
+    form = AdForm(request.POST or None, request.FILES or None, initial={"category": request.GET.get("kat")})
     if request.method == "POST" and form.is_valid():
         form.instance.owner = request.user
         ad = form.save()
@@ -108,6 +108,9 @@ def _render_ad_detail(request, ad, application_form=None, status=200):
             can_close=ad.can_transition_to(Ad.Status.DONE),
         )
     elif user.role == Role.MASTER:
+        profile = MasterProfile.objects.filter(user=user).first()
+        if profile and None not in (profile.latitude, profile.longitude, ad.latitude, ad.longitude):
+            context["distance"] = geo.distance_km(profile.latitude, profile.longitude, ad.latitude, ad.longitude)
         context.update(
             my_application=ad.applications.filter(master=user).first(),
             application_form=application_form or ApplicationForm(),
@@ -162,15 +165,19 @@ def withdraw_application(request, pk):
 def _nearby_masters_page(request, location_form=None, status=200):
     location = _session_location(request)
     radius = _radius(request, 10)
+    category = request.GET.get("kat") or None
     masters = suggestion = None
     if location:
         masters = geo.nearby_masters(location["lat"], location["lng"], radius)
+        if category:
+            masters = [p for p in masters if p.profession.name == category]
         if not masters:
             suggestion = geo.suggest_radius(location["lat"], location["lng"], radius)
     form = location_form or LocationForm(initial={"location_text": (location or {}).get("text", "")})
     return render(request, "listings/nearby_masters.html", {
         "location": location, "radius": radius, "radius_choices": (5, 10, 20),
         "masters": masters, "suggestion": suggestion, "location_form": form, "cities": geo.CITIES,
+        "categories": Category.objects.all(), "category": category,
     }, status=status)
 
 
@@ -239,6 +246,7 @@ def master_ads(request):
         ads = geo.nearby_open_ads(profile.latitude, profile.longitude, radius, profile.profession)
     return render(request, "listings/master_ads.html", {
         "profile": profile, "ads": ads, "radius": radius, "radius_choices": (10, 20, 50),
+        "applied_ids": set(Application.objects.filter(master=request.user).values_list("ad_id", flat=True)),
     })
 
 
@@ -251,9 +259,9 @@ JOB_FILTERS = {
 
 @role_required(Role.MASTER)
 def my_jobs(request):
-    selected = request.GET.get("allapot", "all")
+    selected = request.GET.get("allapot", "in_progress")
     if selected not in JOB_FILTERS:
-        selected = "all"
+        selected = "in_progress"
     jobs = Ad.objects.filter(chosen_master=request.user).select_related("owner", "category")
     statuses = JOB_FILTERS[selected][1]
     if statuses:

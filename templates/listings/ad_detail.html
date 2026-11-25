@@ -15,13 +15,13 @@
     <div class="toolbar">
       {% if ad.is_editable %}<a class="btn btn-secondary" href="{% url 'listings:ad_edit' ad.pk %}">Szerkesztés</a>{% endif %}
       {% if can_close %}
-        <form method="post" action="{% url 'listings:ad_set_status' ad.pk %}">
+        <form method="post" action="{% url 'listings:ad_set_status' ad.pk %}" data-confirm="Biztosan lezárod? Akkor zárd le, ha a mester elvégezte a munkát.">
           {% csrf_token %}<input type="hidden" name="status" value="done">
           <button type="submit" class="btn btn-primary">Munka kész, lezárom</button>
         </form>
       {% endif %}
       {% if can_withdraw %}
-        <form method="post" action="{% url 'listings:ad_set_status' ad.pk %}" onsubmit="return confirm('Biztosan visszavonod a hirdetést?')">
+        <form method="post" action="{% url 'listings:ad_set_status' ad.pk %}" data-confirm="Biztosan visszavonod a hirdetést? A mesterek többé nem jelentkezhetnek rá.">
           {% csrf_token %}<input type="hidden" name="status" value="withdrawn">
           <button type="submit" class="btn btn-danger">Hirdetés visszavonása</button>
         </form>
@@ -39,7 +39,7 @@
             <span class="badge {{ application.badge_class }}">{{ application.status_label }}</span>
             {% if application.message %}<p>{{ application.message|linebreaksbr }}</p>{% endif %}
             {% if ad.accepts_applications %}
-              <form method="post" action="{% url 'listings:choose_master' ad.pk application.pk %}">
+              <form method="post" action="{% url 'listings:choose_master' ad.pk application.pk %}" data-confirm="Biztosan őt választod: {{ application.master.name }}? A többi jelentkezést elutasítjuk, a hirdetés Folyamatban állapotba kerül.">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-primary">Őt választom</button>
               </form>
@@ -58,7 +58,7 @@
         <span class="badge {{ my_application.badge_class }}">{{ my_application.status_label }}</span>
         {% if my_application.message %}<p>{{ my_application.message|linebreaksbr }}</p>{% endif %}
         {% if ad.accepts_applications %}
-          <form method="post" action="{% url 'listings:withdraw_application' ad.pk %}">
+          <form method="post" action="{% url 'listings:withdraw_application' ad.pk %}" data-confirm="Biztosan visszavonod a jelentkezésed?">
             {% csrf_token %}
             <button type="submit" class="btn btn-secondary">Jelentkezés visszavonása</button>
           </form>

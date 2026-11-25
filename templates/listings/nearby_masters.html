@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Közeli mesterek{% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+{% endblock %}
 {% block content %}
   <h1 class="page-title">Közeli mesterek</h1>
 
@@ -7,6 +11,7 @@
     {% csrf_token %}
     {% include "listings/_form_fields.html" with form=location_form %}
     {% include "listings/_cities_datalist.html" %}
+    <button type="button" class="btn btn-primary" data-geolocate>Hol vagy?</button>
     <button type="submit" class="btn btn-secondary">Hely mentése</button>
   </form>
 
@@ -17,7 +22,7 @@
         <a class="chip" href="?r={{ r }}"{% if r == radius %} aria-current="true"{% endif %}>{{ r }} km</a>
       {% endfor %}
     </div>
-    <div id="map" data-api="{% url 'listings:api_masters' %}?lat={{ location.lat }}&amp;lng={{ location.lng }}&amp;r={{ radius }}"></div>
+    <div id="map" data-api="{% url 'listings:api_masters' %}?lat={{ location.lat|stringformat:"s" }}&amp;lng={{ location.lng|stringformat:"s" }}&amp;r={{ radius|stringformat:"s" }}" data-lat="{{ location.lat|stringformat:"s" }}" data-lng="{{ location.lng|stringformat:"s" }}" data-radius="{{ radius|stringformat:"s" }}"></div>
     {% if masters %}
       <ul class="card-list">
         {% for profile in masters %}
