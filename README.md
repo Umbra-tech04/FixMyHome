@@ -8,9 +8,11 @@ Progresszív webalkalmazás, amely összeköti a műszaki problémára megoldás
 git clone https://github.com/Umbra-tech04/FixMyHome.git && cd FixMyHome   # 1. klónozás
 python3.12 -m venv .venv && source .venv/bin/activate                     # 2. venv (Windows: .venv\Scripts\activate)
 pip install -r requirements.txt                                           # 3. függőségek
-cp .env.example .env && python manage.py migrate                          # 4. beállítás + adatbázis
+cp .env.example .env && python manage.py migrate && python manage.py seed_demo   # 4. beállítás + adatbázis + bemutató adatok
 python manage.py runserver                                                # 5. indítás: http://127.0.0.1:8000
 ```
+
+Ubuntu/Debian alatt a venvhez kell a `python3-venv` csomag (pl. `sudo apt install python3.14-venv`); Python 3.12–3.14 is jó.
 
 Admin felülethez: `python manage.py createsuperuser` (e-mail + név + jelszó), majd `/admin/`.
 Tesztek: `python manage.py test`.
@@ -25,8 +27,8 @@ Helyi PostgreSQL (opcionális): `docker compose up -d db`, majd a `.env`-be: `DA
 
 `python manage.py seed_demo` (többször is futtatható). Minden fiók jelszava: `test1234`.
 
-- `felhasznalo@fixmyhome.test`: felhasználó (Szabadka), 3 nyitott hirdetéssel
-- `villanyszerelo@` (Szabadka), `vizszerelo@` (Palics), `festo@` (Topolya), `asztalos@` (Zenta, nem elérhető): mesterek, mind `@fixmyhome.test`
+- `felhasznalo@fixmyhome.test`: felhasználó (Szabadka), 8 hirdetéssel (nyitott, folyamatban, lezárt; a „Csöpög a konyhai csap” hirdetésre függő jelentkezés vár)
+- `villanyszerelo@` (Szabadka; 1 folyamatban lévő és 1 lezárt munka, 1 szolgáltatás), `vizszerelo@` (Palics), `festo@` (Topolya), `asztalos@` (Zenta, nem elérhető): mesterek, mind `@fixmyhome.test`
 - `ugyfelszolgalat@fixmyhome.test`: ügyfélszolgálat
 
 ## Felépítés
