@@ -1,5 +1,17 @@
 {% extends "base.html" %}
+{% block title %}Szakember a környékeden{% endblock %}
 {% block content %}
-  <h1>MesterKereső</h1>
-  <p>Találj megbízható szakembert a közeledben.</p>
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">MesterKereső projekt</p>
+      <h1 class="page-title">Szakember a környékeden, pár kattintásra.</h1>
+      <p class="page-lead">{% if user.is_authenticated %}Szia, {{ user.name }}! Az ügyfélszolgálati felület hamarosan érkezik.{% else %}Add fel, mi a gond, és a közeli, megfelelő szakmájú mesterek jelentkeznek rá.{% endif %}</p>
+    </div>
+    {% if not user.is_authenticated %}
+      <div class="row">
+        <a class="btn btn-primary" href="{% url 'login' %}">Belépés</a>
+        <a class="btn btn-secondary" href="{% url 'register' %}">Regisztráció</a>
+      </div>
+    {% endif %}
+  </div>
 {% endblock %}

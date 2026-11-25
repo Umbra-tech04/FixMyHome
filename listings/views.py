@@ -30,6 +30,16 @@ def _session_location(request):
     return request.session.get("location")
 
 
+def home(request):
+    """Belépve a szerepkör kezdőoldala (redirect nélkül, mert a kolléga tesztjei 200-at várnak a "/"-re)."""
+    if request.user.is_authenticated:
+        if request.user.role == Role.USER:
+            return nearby_masters(request)
+        if request.user.role == Role.MASTER:
+            return master_ads(request)
+    return render(request, "home.html")
+
+
 # --- Felhasználó: hirdetések -------------------------------------------------------------------
 
 @role_required(Role.USER)

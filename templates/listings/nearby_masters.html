@@ -53,10 +53,10 @@
                     <div><h3>{{ profile.user.name }}</h3><span class="trade-label">{{ profile.profession }}</span></div>
                     <span class="pill-distance">{{ profile.distance|floatformat:1 }}<small>km</small></span>
                   </div>
-                  {% if profile.service %}<p class="card-desc">{{ profile.service.description }}</p>{% endif %}
+                  <p class="card-desc">{% if profile.service %}{{ profile.service.description }}{% else %}{{ profile.profession }} – munkák {{ profile.service_area }} környékén.{% endif %}</p>
                   <div class="card-facts">
                     <span>{% icon "pin" %} {{ profile.service_area }}</span>
-                    {% if profile.service %}<span class="price">{{ profile.service.get_price_category_display }}</span>{% endif %}
+                    <span class="price">{% if profile.service %}{{ profile.service.get_price_category_display }}{% else %}Ár megegyezés szerint{% endif %}</span>
                     {% if profile.is_available %}<span class="avail">Most elérhető</span>{% else %}<span class="avail avail-off">Most nem elérhető</span>{% endif %}
                   </div>
                   <p class="rating-none">Még nincs értékelés</p>
