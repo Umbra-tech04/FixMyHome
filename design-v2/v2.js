@@ -152,7 +152,12 @@
     });
     if (window.L) {
       map = L.map('map', { zoomControl: true }).setView(center.slice(0, 2), 12);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map);
+      // Offline: csempe nélkül a CSS-rács a háttér. Az első sikertelen csempénél leválasztjuk a réteget, hogy ne próbálkozzon tovább.
+      const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap', errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' });
+      let tileOk = false;
+      const offline = () => { if (tileOk) return; if (map.hasLayer(tiles)) map.removeLayer(tiles); if (!$('.map-offline')) $('#map').insertAdjacentHTML('beforeend', '<span class="map-offline">Offline – alaptérkép nélkül</span>'); };
+      tiles.on('tileload', () => { tileOk = true; }).on('tileerror', offline);
+      if (navigator.onLine) tiles.addTo(map); else offline();
       layer = L.layerGroup().addTo(map);
     }
     const hot = (id, on, scroll) => {
