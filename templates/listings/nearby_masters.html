@@ -1,46 +1,81 @@
 {% extends "base.html" %}
-{% block title %}Közeli mesterek{% endblock %}
+{% load fmh %}
+{% block title %}Mesterek a közelben{% endblock %}
 {% block extra_head %}
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 {% endblock %}
 {% block content %}
-  <h1 class="page-title">Közeli mesterek</h1>
+  <div class="page-head"><div><h1 class="page-title">Mesterek a közelben</h1><p class="page-lead">Add meg, hol vagy, és válaszd ki, milyen szakember kell.</p></div></div>
 
-  <form method="post" action="{% url 'listings:save_location' %}" class="card" id="location-form">
-    {% csrf_token %}
-    {% include "listings/_form_fields.html" with form=location_form %}
-    {% include "listings/_cities_datalist.html" %}
-    <button type="button" class="btn btn-primary" data-geolocate>Hol vagy?</button>
-    <button type="submit" class="btn btn-secondary">Hely mentése</button>
-  </form>
-
-  {% if location %}
-    <div class="toolbar">
-      <span>Körzet:</span>
-      {% for r in radius_choices %}
-        <a class="chip" href="?r={{ r }}"{% if r == radius %} aria-current="true"{% endif %}>{{ r }} km</a>
-      {% endfor %}
-    </div>
-    <div id="map" data-api="{% url 'listings:api_masters' %}?lat={{ location.lat|stringformat:"s" }}&amp;lng={{ location.lng|stringformat:"s" }}&amp;r={{ radius|stringformat:"s" }}" data-lat="{{ location.lat|stringformat:"s" }}" data-lng="{{ location.lng|stringformat:"s" }}" data-radius="{{ radius|stringformat:"s" }}"></div>
-    {% if masters %}
-      <ul class="card-list">
-        {% for profile in masters %}
-          <li class="card">
-            <span class="avatar" aria-hidden="true">{{ profile.user.name|first }}</span>
-            <strong>{{ profile.user.name }}</strong> · {{ profile.profession }} · {{ profile.service_area }}
-            <span class="pill-distance">{{ profile.distance|floatformat:1 }} km</span>
-            <span class="rating-none">Még nincs értékelés</span>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <div class="empty-state">
-        <p>{{ radius|floatformat:"0" }} km-en belül most nincs elérhető mester.</p>
-        {% if suggestion %}<a class="btn btn-primary" href="?r={{ suggestion }}">Keresés {{ suggestion }} km-es körzetben</a>{% endif %}
+  <div class="toolbar">
+    <form method="post" action="{% url 'listings:save_location' %}" class="row" id="location-form" role="search">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      {% include "listings/_hidden_errors.html" with form=location_form %}
+      <button type="button" class="btn btn-primary" data-geolocate>{% icon "locate" %}Hol vagyok?</button>
+      <div class="form-field{% if location_form.location_text.errors %} has-error{% endif %}">
+        <label for="{{ location_form.location_text.id_for_label }}" class="sr-only">Település vagy irányítószám</label>
+        {{ location_form.location_text }}
+        {% for error in location_form.location_text.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+      </div>
+      {% include "listings/_cities_datalist.html" %}
+      <button type="submit" class="btn btn-secondary">Keresés</button>
+    </form>
+    {% if location %}
+      <span class="divider" aria-hidden="true"></span>
+      <div class="row" role="group" aria-label="Körzet" style="gap:0">
+        {% for r in radius_choices %}<a class="chip" href="?r={{ r }}{% if category %}&amp;kat={{ category|urlencode }}{% endif %}"{% if r == radius %} aria-current="true"{% endif %}>{{ r }} km</a>{% endfor %}
+      </div>
+      <span class="spacer"></span>
+      <div class="row" role="group" aria-label="Nézet" style="gap:0">
+        <button type="button" class="chip" data-view="list" aria-pressed="true">Lista</button><button type="button" class="chip" data-view="map" aria-pressed="false">Térkép</button>
       </div>
     {% endif %}
+  </div>
+
+  {% if location %}
+    <div class="tabs" role="group" aria-label="Szakma">
+      <a href="?r={{ radius|floatformat:'0' }}"{% if not category %} aria-current="true"{% endif %}>Mind</a>
+      {% for cat in categories %}<a href="?r={{ radius|floatformat:'0' }}&amp;kat={{ cat.name|urlencode }}"{% if cat.name == category %} aria-current="true"{% endif %}>{{ cat.name }}</a>{% endfor %}
+    </div>
+    <p class="muted" id="result-count" aria-live="polite">{{ masters|length }} mester {{ radius|floatformat:"0" }} km-en belül{% if location.text %} · {{ location.text }} körül{% endif %}{% if category %} · {{ category }}{% endif %}</p>
+
+    <div data-view-panel="list">
+      {% if masters %}
+        <ul class="card-list">
+          {% for profile in masters %}
+            <li class="card hoverable cat-{{ profile.profession.name|slugify }}">
+              <div class="card-top">
+                <div><h3>{{ profile.user.name }}</h3><span class="chip chip-trade">{% icon profile.profession.name %}{{ profile.profession }}</span></div>
+                <span class="pill-distance">{{ profile.distance|floatformat:1 }}<small>km</small></span>
+              </div>
+              <p class="card-sub">{% icon "pin" %}{{ profile.service_area }}{% if profile.service %} · <b>{{ profile.service.get_price_category_display }}</b>{% endif %}{% if profile.is_available %} · Most elérhető{% endif %} <span class="rating-none">· Még nincs értékelés</span></p>
+              {% if profile.service %}<p class="muted">{{ profile.service.description|truncatechars:90 }}</p>{% endif %}
+              <div class="card-actions"><a class="btn btn-secondary btn-sm" href="{% url 'listings:ad_create' %}?kat={{ profile.profession_id }}">Ajánlatot kérek</a></div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">
+          {% icon "search" %}
+          <h3>Nincs mester ebben a körzetben</h3>
+          <p>{{ radius|floatformat:"0" }} km-en belül most nincs elérhető mester{% if category %} ebben a szakmában{% endif %}.</p>
+          {% if suggestion %}<a class="btn btn-secondary" href="?r={{ suggestion }}{% if category %}&amp;kat={{ category|urlencode }}{% endif %}">Próbáld {{ suggestion }} km-rel</a>
+          {% else %}<a class="btn btn-secondary" href="{% url 'listings:ad_create' %}">Hirdetés feladása</a>{% endif %}
+        </div>
+      {% endif %}
+    </div>
+    <div data-view-panel="map" hidden>
+      <div class="map-wrap">
+        <div id="map" data-api="{% url 'listings:api_masters' %}?lat={{ location.lat|stringformat:'s' }}&amp;lng={{ location.lng|stringformat:'s' }}&amp;r={{ radius|stringformat:'s' }}{% if category %}&amp;kat={{ category|urlencode }}{% endif %}" data-lat="{{ location.lat|stringformat:'s' }}" data-lng="{{ location.lng|stringformat:'s' }}" data-radius="{{ radius|stringformat:'s' }}"></div>
+      </div>
+    </div>
   {% else %}
-    <div class="empty-state"><p>Add meg a helyed, és megmutatjuk a közeli mestereket.</p></div>
+    <div class="empty-state">
+      {% icon "pin" %}
+      <h3>Hol keresel mestert?</h3>
+      <p>Nyomd meg a „Hol vagyok?” gombot, vagy írd be a települést vagy az irányítószámot.</p>
+    </div>
   {% endif %}
 {% endblock %}

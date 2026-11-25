@@ -1,14 +1,30 @@
 {% extends "base.html" %}
 {% block title %}{% if ad %}Hirdetés szerkesztése{% else %}Hirdetés feladása{% endif %}{% endblock %}
 {% block content %}
-  <h1 class="page-title">{% if ad %}Hirdetés szerkesztése{% else %}Hirdetés feladása{% endif %}</h1>
-  <form method="post" enctype="multipart/form-data" class="card">
+  <div class="page-head"><div>
+    {% if ad %}<p class="eyebrow"><a href="{% url 'listings:ad_detail' ad.pk %}">← {{ ad.title }}</a></p>{% endif %}
+    <h1 class="page-title">{% if ad %}Hirdetés szerkesztése{% else %}Hirdetés feladása{% endif %}</h1>
+    <p class="page-lead">Írd le, mi a gond – a közeli, megfelelő szakmájú mesterek jelentkeznek rá.</p>
+  </div></div>
+  <form method="post" enctype="multipart/form-data" class="form" novalidate>
     {% csrf_token %}
-    {% include "listings/_form_fields.html" %}
+    {% include "listings/_hidden_errors.html" %}
+    {% include "listings/_field.html" with field=form.title %}
+    {% include "listings/_field.html" with field=form.description %}
+    <div class="form-row">
+      {% include "listings/_field.html" with field=form.category %}
+      {% include "listings/_field.html" with field=form.location_text %}
+    </div>
     {% include "listings/_cities_datalist.html" %}
-    <div class="toolbar">
-      <button type="submit" class="btn btn-primary">{% if ad %}Mentés{% else %}Feladom{% endif %}</button>
-      <a class="btn btn-secondary" href="{% if ad %}{% url 'listings:ad_detail' ad.pk %}{% else %}{% url 'listings:my_ads' %}{% endif %}">Mégse</a>
+    <div class="form-field{% if form.images.errors %} has-error{% endif %}">
+      <span class="label">Képek <span class="muted small">(nem kötelező{% if ad %}, a meglévők mellé kerülnek{% endif %})</span></span>
+      <label class="dropzone" for="{{ form.images.id_for_label }}">Húzd ide a képeket, vagy <u>kattints a tallózáshoz</u></label>
+      {{ form.images }}
+      {% for error in form.images.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">{% if ad %}Mentés{% else %}Hirdetés feladása{% endif %}</button>
+      <a class="btn btn-ghost" href="{% if ad %}{% url 'listings:ad_detail' ad.pk %}{% else %}{% url 'listings:my_ads' %}{% endif %}">Mégse</a>
     </div>
   </form>
 {% endblock %}

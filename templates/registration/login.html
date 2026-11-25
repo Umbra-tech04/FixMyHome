@@ -1,12 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Belépés – MesterKereső{% endblock %}
+{% block title %}Belépés{% endblock %}
+{% block main_class %} auth{% endblock %}
 {% block content %}
-  <h1>Belépés</h1>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="hidden" name="next" value="{{ next }}">
-    <button type="submit">Belépek</button>
-  </form>
-  <p>Még nincs fiókod? <a href="{% url 'register' %}">Regisztráció</a></p>
+  <div class="card">
+    <div class="page-head"><div><h1 class="page-title">Belépés</h1><p class="page-lead">Lépj be, és keress mestert a közeledben.</p></div></div>
+    <form method="post" class="form" novalidate>
+      {% csrf_token %}
+      {% for error in form.non_field_errors %}<p class="form-alert" role="alert">{{ error }}</p>{% endfor %}
+      {% include "listings/_field.html" with field=form.username %}
+      {% include "listings/_field.html" with field=form.password %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn-primary btn-block">Belépek</button>
+      <p class="muted small" style="text-align:center;margin:0">Még nincs fiókod? <a href="{% url 'register' %}">Regisztráció</a></p>
+    </form>
+  </div>
 {% endblock %}

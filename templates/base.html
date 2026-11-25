@@ -1,19 +1,17 @@
-{% load static %}<!DOCTYPE html>
+{% load static fmh %}<!DOCTYPE html>
 <html lang="hu">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}MesterKereső{% endblock %}</title>
+  <title>{% block title %}FixMyHome{% endblock %} – FixMyHome</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <link rel="stylesheet" id="theme-css" href="{% static 'css/themes/a-hivis.css' %}">
+  <link rel="stylesheet" href="{% static 'css/django.css' %}">
   <script>
     // Téma még az első rajzolás előtt (ugyanaz a localStorage-kulcs, mint a design/app.js-ben), hogy ne villanjon.
-    window.FMH_THEMES = {
-      a: "{% static 'css/themes/a-hivis.css' %}", b: "{% static 'css/themes/b-workshop.css' %}",
-      c: "{% static 'css/themes/c-muhely.css' %}", d: "{% static 'css/themes/d-ejszakai.css' %}"
-    };
+    window.FMH_THEMES = { a: "{% static 'css/themes/a-hivis.css' %}", b: "{% static 'css/themes/b-acel.css' %}" };
     (function () {
       var theme = localStorage.getItem("fmh-theme");
       if (!window.FMH_THEMES[theme]) theme = "a";
@@ -24,34 +22,34 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body>
-  <header>
-    <a href="{% url 'home' %}"><strong>MesterKereső</strong></a>
-    {% block nav %}
-      <nav>
-        {% if user.is_authenticated %}
-          {% if user.role == "user" %}
-            <a href="{% url 'listings:ad_create' %}">Hirdetés feladása</a>
-            <a href="{% url 'listings:my_ads' %}">Hirdetéseim</a>
-            <a href="{% url 'listings:nearby_masters' %}">Közeli mesterek</a>
-          {% elif user.role == "master" %}
-            <a href="{% url 'listings:master_ads' %}">Környékbeli hirdetések</a>
-            <a href="{% url 'listings:my_jobs' %}">Munkáim</a>
-            <a href="{% url 'listings:service_list' %}">Szolgáltatásaim</a>
-            <a href="{% url 'listings:master_profile' %}">Adataim</a>
-          {% endif %}
-          <span>{{ user.name }} ({{ user.get_role_display }})</span>
-          <form method="post" action="{% url 'logout' %}" style="display:inline">
-            {% csrf_token %}
-            <button type="submit">Kilépés</button>
-          </form>
-        {% else %}
-          <a href="{% url 'login' %}">Belépés</a>
-          <a href="{% url 'register' %}">Regisztráció</a>
-        {% endif %}
-      </nav>
-    {% endblock %}
-  </header>
-  <main>
+  {% with url_name=request.resolver_match.url_name %}
+  <header class="site-header"><div class="container">
+    <a class="logo" href="{% if user.role == 'user' %}{% url 'listings:nearby_masters' %}{% elif user.role == 'master' %}{% url 'listings:master_ads' %}{% else %}{% url 'home' %}{% endif %}">{% icon "logo" %}<span>FixMyHome</span></a>
+    <nav class="main-nav" aria-label="Főmenü">
+      {% if user.role == "user" %}
+        <a href="{% url 'listings:nearby_masters' %}"{% if url_name == "nearby_masters" %} aria-current="page"{% endif %}>Mesterek</a>
+        <a href="{% url 'listings:my_ads' %}"{% if url_name in "my_ads ad_detail ad_edit" %} aria-current="page"{% endif %}>Hirdetéseim</a>
+      {% elif user.role == "master" %}
+        <a href="{% url 'listings:master_ads' %}"{% if url_name in "master_ads ad_detail" %} aria-current="page"{% endif %}>Hirdetések</a>
+        <a href="{% url 'listings:my_jobs' %}"{% if url_name == "my_jobs" %} aria-current="page"{% endif %}>Munkáim</a>
+        <a href="{% url 'listings:service_list' %}"{% if url_name in "service_list service_create service_edit service_delete" %} aria-current="page"{% endif %}>Szolgáltatásaim</a>
+      {% endif %}
+      <span class="nav-indicator" aria-hidden="true"></span>
+    </nav>
+    <div class="header-cta">
+      {% if user.role == "user" %}
+        <a class="btn btn-header" href="{% url 'listings:ad_create' %}"{% if url_name == "ad_create" %} aria-current="page"{% endif %}>{% icon "plus" %}Hirdetés feladása</a>
+      {% elif user.role == "master" %}
+        <a class="icon-btn" href="{% url 'listings:master_profile' %}" title="Alapadatok" aria-label="Alapadatok"{% if url_name == "master_profile" %} aria-current="page"{% endif %}>{% icon "user" %}</a>
+      {% elif not user.is_authenticated %}
+        {% if url_name != "register" %}<a class="btn btn-ghost" href="{% url 'register' %}">Regisztráció</a>{% endif %}
+        {% if url_name != "login" %}<a class="btn btn-header" href="{% url 'login' %}">Belépés</a>{% endif %}
+      {% endif %}
+    </div>
+  </div></header>
+  {% endwith %}
+
+  <main class="container{% block main_class %}{% endblock %}">
     {% if messages %}
       <ul class="messages" role="status">
         {% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}
@@ -59,8 +57,18 @@
     {% endif %}
     {% block content %}{% endblock %}
   </main>
+
+  <footer class="site-footer"><div class="container">© 2026 FixMyHome · Vajdaság</div></footer>
+  <details class="demo-panel"><summary>DEMO</summary><div class="demo-body">
+    <div class="row"><span>Téma</span><div class="seg" role="group" aria-label="Téma"><button type="button" data-theme="a" aria-pressed="true">A Építkezés</button><button type="button" data-theme="b" aria-pressed="false">B Acél</button></div></div>
+    {% if user.is_authenticated %}
+      <span class="muted small">{{ user.name }} · {{ user.get_role_display }}</span>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="linklike">Kilépés</button></form>
+    {% endif %}
+  </div></details>
+
   <script>
-    // Natív megerősítés a [data-confirm] formokra, csak ha a fixmyhome.js (window.FixMyHome modálja) nem töltődött be.
+    // Natív megerősítés a [data-confirm] formokra, csak ha a fixmyhome.js saját modálja nem töltődött be.
     document.addEventListener("submit", function (event) {
       var text = event.target.dataset && event.target.dataset.confirm;
       if (text && !window.FixMyHome && !window.FMH_CONFIRM && !window.confirm(text)) event.preventDefault();

@@ -1,10 +1,37 @@
 {% extends "base.html" %}
-{% block title %}Regisztráció – MesterKereső{% endblock %}
+{% block title %}Regisztráció{% endblock %}
+{% block main_class %} auth{% endblock %}
 {% block content %}
-  <h1>Regisztráció</h1>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Regisztrálok</button>
-  </form>
+  <div class="card">
+    <div class="page-head"><div><h1 class="page-title">Regisztráció</h1><p class="page-lead">Válaszd ki, mire használod a FixMyHome-ot.</p></div></div>
+    <form method="post" class="form" id="register-form" novalidate>
+      {% csrf_token %}
+      {% for error in form.non_field_errors %}<p class="form-alert" role="alert">{{ error }}</p>{% endfor %}
+      <fieldset class="form-field{% if form.role.errors %} has-error{% endif %}"><legend class="sr-only">Szerepkör</legend>
+        <div class="role-pick">
+          <label><input type="radio" name="{{ form.role.html_name }}" value="user"{% if form.role.value == "user" %} checked{% endif %} required><strong>Mestert keresek</strong><span class="muted small">Otthoni munkára keresek szakembert.</span></label>
+          <label><input type="radio" name="{{ form.role.html_name }}" value="master"{% if form.role.value == "master" %} checked{% endif %}><strong>Mester vagyok</strong><span class="muted small">Munkát vállalok a környéken.</span></label>
+        </div>
+        {% for error in form.role.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+      </fieldset>
+      {% include "listings/_field.html" with field=form.name %}
+      <div class="form-row">
+        {% include "listings/_field.html" with field=form.email %}
+        {% include "listings/_field.html" with field=form.phone %}
+      </div>
+      <div class="form-row">
+        {% include "listings/_field.html" with field=form.password1 %}
+        {% include "listings/_field.html" with field=form.password2 %}
+      </div>
+      <div id="trade-field">
+        {% include "listings/_field.html" with field=form.profession %}
+        <div class="form-row">
+          {% include "listings/_field.html" with field=form.service_area %}
+          {% include "listings/_field.html" with field=form.contact %}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Regisztrálok</button>
+      <p class="muted small" style="text-align:center;margin:0">Van már fiókod? <a href="{% url 'login' %}">Lépj be</a></p>
+    </form>
+  </div>
 {% endblock %}

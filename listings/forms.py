@@ -34,7 +34,7 @@ class MultipleImageInput(forms.ClearableFileInput):
 
 class MultipleImageField(forms.ImageField):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", MultipleImageInput(attrs={"accept": "image/*", "data-preview": ""}))
+        kwargs.setdefault("widget", MultipleImageInput(attrs={"accept": "image/*", "data-preview": "", "hidden": True}))
         super().__init__(*args, **kwargs)
 
     def clean(self, data, initial=None):
@@ -50,8 +50,13 @@ class AdForm(forms.ModelForm):
     class Meta:
         model = Ad
         fields = ["title", "description", "category", "location_text", "latitude", "longitude"]
-        labels = {"title": "Cím", "description": "Leírás", "category": "Kategória", "location_text": "Település"}
-        widgets = {"location_text": CITY_INPUT, "latitude": forms.HiddenInput(), "longitude": forms.HiddenInput()}
+        labels = {"title": "Cím", "description": "Leírás", "category": "Szakma", "location_text": "Település"}
+        widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "Pl. Csöpög a konyhai csap"}),
+            "description": forms.Textarea(attrs={"placeholder": "Mi a gond, mióta, mekkora a munka?"}),
+            "location_text": forms.TextInput(attrs={"list": "cities", "autocomplete": "off", "placeholder": "Pl. Szabadka"}),
+            "latitude": forms.HiddenInput(), "longitude": forms.HiddenInput(),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -90,7 +95,9 @@ class MasterProfileForm(forms.ModelForm):
 
 
 class LocationForm(forms.Form):
-    location_text = forms.CharField(label="Település vagy cím", max_length=200, required=False, widget=CITY_INPUT)
+    location_text = forms.CharField(label="Település vagy cím", max_length=200, required=False, widget=forms.TextInput(
+        attrs={"list": "cities", "autocomplete": "off", "placeholder": "vagy írd be: település / irsz."},
+    ))
     latitude = forms.FloatField(required=False, widget=forms.HiddenInput())
     longitude = forms.FloatField(required=False, widget=forms.HiddenInput())
 
@@ -122,4 +129,8 @@ class ServiceListingForm(forms.ModelForm):
             "title": "Megnevezés", "category": "Kategória", "description": "Leírás",
             "service_area": "Működési terület", "price_category": "Árkategória",
         }
-        widgets = {"service_area": CITY_INPUT}
+        widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "Pl. Háztartási villanyszerelés"}),
+            "description": forms.Textarea(attrs={"placeholder": "Mit vállalsz pontosan?"}),
+            "service_area": forms.TextInput(attrs={"list": "cities", "autocomplete": "off", "placeholder": "Pl. Szabadka és 10 km"}),
+        }

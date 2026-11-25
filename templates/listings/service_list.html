@@ -1,30 +1,39 @@
 {% extends "base.html" %}
+{% load fmh %}
 {% block title %}Szolgáltatásaim{% endblock %}
 {% block content %}
-  <h1 class="page-title">Szolgáltatásaim</h1>
-  <div class="toolbar"><a class="btn btn-primary" href="{% url 'listings:service_create' %}">Új szolgáltatás</a></div>
+  <div class="page-head">
+    <div><h1 class="page-title">Szolgáltatásaim</h1><p class="page-lead">Amit itt meghirdetsz, azt látják az ügyfelek. Szüneteltetni és törölni is tudod.</p></div>
+    <a class="btn btn-primary" href="{% url 'listings:service_create' %}">Új szolgáltatás</a>
+  </div>
   {% if services %}
     <ul class="card-list">
       {% for service in services %}
-        <li class="card">
-          <strong>{{ service.title }}</strong>
-          {% if service.is_active %}<span class="badge badge-open">Közzétéve</span>{% else %}<span class="badge badge-withdrawn">Szüneteltetve</span>{% endif %}
-          <p>{{ service.category }} · {{ service.service_area }} · {{ service.get_price_category_display }}</p>
-          <div class="toolbar">
-            <a class="btn btn-secondary" href="{% url 'listings:service_edit' service.pk %}">Szerkesztés</a>
+        <li class="card hoverable cat-{{ service.category.name|slugify }}">
+          <div class="card-top">
+            <div><h3>{{ service.title }}</h3><span class="chip chip-trade">{% icon service.category.name %}{{ service.category }}</span></div>
+            {% if service.is_active %}<span class="badge badge-open">Közzétéve</span>{% else %}<span class="badge badge-withdrawn">Szüneteltetve</span>{% endif %}
+          </div>
+          <p class="card-sub"><b>{{ service.get_price_category_display }}</b> · {{ service.service_area }}</p>
+          <p class="muted">{{ service.description }}</p>
+          <div class="card-actions">
+            <a class="btn btn-secondary btn-sm" href="{% url 'listings:service_edit' service.pk %}">Szerkesztés</a>
             <form method="post" action="{% url 'listings:service_toggle' service.pk %}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-secondary">{% if service.is_active %}Szüneteltetés{% else %}Újraindítás{% endif %}</button>
+              {% csrf_token %}<button type="submit" class="btn btn-secondary btn-sm">{% if service.is_active %}Szüneteltetés{% else %}Közzététel{% endif %}</button>
             </form>
-            <a class="btn btn-danger" href="{% url 'listings:service_delete' service.pk %}">Törlés</a>
+            <form method="post" action="{% url 'listings:service_delete' service.pk %}" data-confirm="Biztosan törlöd?" data-confirm-body="A(z) „{{ service.title }}” szolgáltatás végleg törlődik." data-confirm-ok="Törlés">
+              {% csrf_token %}<button type="submit" class="btn btn-ghost btn-sm">Törlés</button>
+            </form>
           </div>
         </li>
       {% endfor %}
     </ul>
   {% else %}
     <div class="empty-state">
-      <p>Még nem hirdetsz szolgáltatást.</p>
-      <a class="btn btn-primary" href="{% url 'listings:service_create' %}">Hirdess egyet</a>
+      {% icon "tool" %}
+      <h3>Még nincs szolgáltatásod</h3>
+      <p>Hirdesd meg, mit vállalsz, így az ügyfelek könnyebben megtalálnak.</p>
+      <a class="btn btn-secondary" href="{% url 'listings:service_create' %}">Új szolgáltatás</a>
     </div>
   {% endif %}
 {% endblock %}

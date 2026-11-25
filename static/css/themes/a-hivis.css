@@ -1,50 +1,14 @@
-/* A téma – „Láthatósági munkaruha”: overallkék + jelzősárga, kemény árnyék, vaskos gombok, szögletes kártyák. */
+/* A téma – „Építkezés”: sötétkék #1F2A44, sárga accent #FFB400, meleg papír #F5F3EE. Barlow + Barlow Semi Condensed. */
 @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Semi+Condensed:wght@600;700;800&display=swap');
 
 :root {
-  --primary: #1F2A44; --primary-ink: #fff;
-  --accent: #FFB400; --accent-ink: #1F2A44;
-  --bg: #F5F3EE; --surface: #fff; --surface-2: #ECE8DE;
-  --text: #1F2A44; --muted: #5A6273; --border: #CFC8B8;
-  --radius: 4px; --radius-sm: 3px;
-  --shadow: 4px 4px 0 rgba(31,42,68,.9);
-  --shadow-hover: 7px 7px 0 #1F2A44;
-  --btn-shadow: 3px 3px 0 #1F2A44;
-  --btn-primary-bg: #FFB400; --btn-primary-ink: #1F2A44;
+  --ink: #1F2A44; --accent: #FFB400; --accent-ink: #1F2A44; --bg: #F5F3EE; --surface: #fff;
   --font: 'Barlow', system-ui, sans-serif; --font-head: 'Barlow Semi Condensed', 'Barlow', sans-serif;
-  --header-bg: #1F2A44; --header-ink: #fff;
 }
-
-/* Fényvisszaverő csík a fejléc alján */
-.site-header { box-shadow: none; border-bottom: 6px solid transparent; border-image: repeating-linear-gradient(-45deg, #FFB400 0 14px, #1F2A44 14px 28px) 6; }
-.page-title, .section-title, .card h3, .modal-body h2 { text-transform: uppercase; letter-spacing: .01em; }
-.page-title { font-size: 2.4rem; }
-
-.card, .toolbar, .cat-tile, .empty-state, .map-wrap { border: 2px solid #1F2A44; }
-.empty-state { border-style: dashed; box-shadow: none; }
-.card-link:hover, .card.hoverable:hover, .cat-tile:hover { transform: translate(-3px, -3px); }
-
-.btn { border: 2px solid #1F2A44; text-transform: uppercase; letter-spacing: .04em; font-family: var(--font-head); font-size: 1.05rem; }
-.btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #1F2A44; filter: none; }
-.btn:active { transform: translate(3px, 3px); box-shadow: none; }
-.btn-secondary { background: #fff; color: #1F2A44; border-color: #1F2A44; }
-.btn-danger { background: #C62828; }
-.btn-ghost { border-color: transparent; box-shadow: none; text-transform: none; }
-.btn-ghost:hover { box-shadow: none; }
-.site-header .btn { box-shadow: none; }
-
-.badge { border-radius: 3px; border: 1.5px solid currentColor; }
-.chip { border-radius: 3px; border-color: #1F2A44; }
-.chip-trade { background: #FFB400; color: #1F2A44; font-weight: 700; }
-.pill-distance { border-radius: 3px; }
-.seg, .seg button { border-radius: 3px; }
-
-.form-field input:not([type=checkbox]):not([type=radio]):not([type=file]), .form-field select, .form-field textarea { border-color: #1F2A44; }
-.cat-tile[aria-pressed="true"] { box-shadow: 4px 4px 0 #FFB400; }
-.toast { border-radius: 3px; box-shadow: 5px 5px 0 #FFB400; }
-dialog.modal { border: 2px solid #1F2A44; box-shadow: 8px 8px 0 #1F2A44; }
-.avatar { border-radius: 6px; box-shadow: 3px 3px 0 #1F2A44; }
-.map-pin { border-radius: 6px 6px 6px 0; }
-.toggle .track { border: 2px solid #1F2A44; }
-.toggle .track::after { top: 2px; left: 2px; border-radius: 4px; }
-.toggle .track { border-radius: 6px; }
+body { font-size: 18px; }
+/* Egyetlen díszcsík: vékony sárga-sötétkék sáv a fejléc alján */
+.site-header { border-bottom: 6px solid transparent; border-image: repeating-linear-gradient(-45deg, #FFB400 0 12px, #1F2A44 12px 24px) 6; }
+.page-title, .section-title, .card h3, .modal-body h2, .empty-state h3, .btn { text-transform: uppercase; }
+.page-title { font-size: 2.8rem; letter-spacing: 0; }
+.btn { letter-spacing: .05em; font-size: 1.05rem; }
+.btn-ghost { text-transform: none; }

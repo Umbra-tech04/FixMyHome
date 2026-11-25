@@ -1,12 +1,33 @@
 {% extends "base.html" %}
-{% block title %}Adataim{% endblock %}
+{% load fmh %}
+{% block title %}Alapadatok{% endblock %}
 {% block content %}
-  <h1 class="page-title">Mester alapadatai</h1>
-  <form method="post" class="card">
+  <div class="page-head"><div><h1 class="page-title">Alapadatok</h1><p class="page-lead">Ezek alapján látod a környékbeli hirdetéseket, és így találnak meg az ügyfelek.</p></div></div>
+  <form method="post" class="form" novalidate>
     {% csrf_token %}
-    {% include "listings/_form_fields.html" %}
+    {% include "listings/_hidden_errors.html" %}
+    <div class="form-field">
+      <label class="toggle"><input type="checkbox" name="{{ form.is_available.html_name }}"{% if form.is_available.value %} checked{% endif %}><span class="track"></span>Most elérhető vagyok</label>
+      <span class="hint">Ha kikapcsolod, nem jelensz meg a közeli mesterek között.</span>
+    </div>
+    <fieldset class="form-field{% if form.profession.errors %} has-error{% endif %}">
+      <legend>Szakma</legend>
+      <div class="row" style="gap:8px">
+        {% for category in form.fields.profession.queryset %}
+          <label class="chip"><input type="radio" name="{{ form.profession.html_name }}" value="{{ category.pk }}"{% if category.pk|stringformat:"s" == form.profession.value|stringformat:"s" %} checked{% endif %}>{% icon category.name %}{{ category.name }}</label>
+        {% endfor %}
+      </div>
+      <span class="hint">Egy szakmát választhatsz.</span>
+      {% for error in form.profession.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+    </fieldset>
+    <div class="form-row">
+      {% include "listings/_field.html" with field=form.service_area %}
+      {% include "listings/_field.html" with field=form.contact %}
+    </div>
     {% include "listings/_cities_datalist.html" %}
-    <button type="button" class="btn btn-secondary" data-geolocate>Hol vagyok?</button>
-    <button type="submit" class="btn btn-primary">Mentés</button>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Mentés</button>
+      <button type="button" class="btn btn-ghost" data-geolocate="fill">{% icon "locate" %}Pontos helyem</button>
+    </div>
   </form>
 {% endblock %}

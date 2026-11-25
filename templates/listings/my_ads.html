@@ -1,23 +1,26 @@
 {% extends "base.html" %}
+{% load fmh %}
 {% block title %}Hirdetéseim{% endblock %}
 {% block content %}
-  <h1 class="page-title">Hirdetéseim</h1>
-  <div class="toolbar"><a class="btn btn-primary" href="{% url 'listings:ad_create' %}">Új hirdetés</a></div>
+  <div class="page-head"><div><h1 class="page-title">Hirdetéseim</h1><p class="page-lead">Itt látod a jelentkezőket, és itt választod ki a mestert.</p></div></div>
   {% if ads %}
     <ul class="card-list">
       {% for ad in ads %}
-        <li class="card">
-          <a href="{% url 'listings:ad_detail' ad.pk %}"><strong>{{ ad.title }}</strong></a>
-          {% include "listings/_ad_badge.html" %}
-          <p>{{ ad.category }} · {{ ad.location_text }} · {{ ad.created_at|timesince }} ezelőtt</p>
-          <p>Jelentkezők: {{ ad.application_count }}</p>
+        <li class="card hoverable cat-{{ ad.category.name|slugify }}">
+          <div class="card-top">{% include "listings/_ad_badge.html" %}<span class="muted small">{{ ad.application_count }} jelentkező</span></div>
+          <h3>{{ ad.title }}</h3>
+          <p class="card-sub">{% icon ad.category.name %}{{ ad.category }} · {{ ad.location_text }} · {{ ad.created_at|timesince }} ezelőtt</p>
+          <p class="muted">{{ ad.description|truncatechars:90 }}</p>
+          <div class="card-actions"><a class="btn btn-secondary btn-sm" href="{% url 'listings:ad_detail' ad.pk %}">Megnézem</a></div>
         </li>
       {% endfor %}
     </ul>
   {% else %}
     <div class="empty-state">
-      <p>Még nincs hirdetésed.</p>
-      <a class="btn btn-primary" href="{% url 'listings:ad_create' %}">Add fel az elsőt</a>
+      {% icon "inbox" %}
+      <h3>Még nincs hirdetésed</h3>
+      <p>Írd le, mi a gond, és a közeli mesterek jelentkeznek rá.</p>
+      <a class="btn btn-secondary" href="{% url 'listings:ad_create' %}">Hirdetés feladása</a>
     </div>
   {% endif %}
 {% endblock %}

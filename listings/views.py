@@ -172,6 +172,12 @@ def _nearby_masters_page(request, location_form=None, status=200):
         masters = geo.nearby_masters(location["lat"], location["lng"], radius)
         if category:
             masters = [p for p in masters if p.profession.name == category]
+        # A kártyára: a mester legrégebbi aktív szolgáltatása (ár + rövid leírás), ha van.
+        services = {}
+        for service in ServiceListing.objects.filter(master_id__in=[p.user_id for p in masters], is_active=True).order_by("created_at"):
+            services.setdefault(service.master_id, service)
+        for profile in masters:
+            profile.service = services.get(profile.user_id)
         if not masters:
             suggestion = geo.suggest_radius(location["lat"], location["lng"], radius)
     form = location_form or LocationForm(initial={"location_text": (location or {}).get("text", "")})
@@ -215,6 +221,8 @@ def api_masters(request):
         return JsonResponse({"error": "A koordináták a megengedett tartományon kívül esnek."}, status=400)
     radius = _radius(request, 10)
     masters = geo.nearby_masters(lat, lng, radius)
+    if request.GET.get("kat"):
+        masters = [p for p in masters if p.profession.name == request.GET["kat"]]
     return JsonResponse({
         "radius_km": radius,
         "masters": [{

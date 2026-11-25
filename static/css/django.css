@@ -1,0 +1,3 @@
+/* Django-specifikus kiegészítések a design/base.css mellé (a base.css a design/-ból másolódik, ezt ne írd felül). */
+/* Regisztráció: a mester-mezők csak mester szerepkörnél látszanak, JS nélkül is. */
+#register-form:has(input[name="role"][value="user"]:checked) #trade-field { display: none; }
