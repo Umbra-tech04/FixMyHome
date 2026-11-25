@@ -1,6 +1,6 @@
 /* FixMyHome V2 – közös alap. Brutalista: betonszürke, fekete, lime (csak fekete felületen). Space Grotesk + JetBrains Mono.
    Szerkezet: bal oldali fix fekete oldalsáv (.sb) + tartalom (.v2-main). A v2.js rajzolja az oldalsávot minden oldalra. */
-@import url('vendor/fonts.css'); /* helyi betűk – net nélkül is működik */
+@import url('vendor/fonts.css?v=20261125b'); /* helyi betűk – net nélkül is működik */
 
 :root {
   --ink: #0B0B0B; --lime: #D4FF3A; --bg: #E6E6E3; --white: #FFFFFF;

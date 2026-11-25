@@ -184,25 +184,28 @@
   }
 
   const clearErrors = f => { $$('.err', f).forEach(e => e.remove()); $$('.has-err', f).forEach(e => e.classList.remove('has-err')); };
+  // Mezőnként egy szabály: '' = rendben, különben a hibaüzenet. A beküldés és az élő újraellenőrzés is ezt használja.
+  const RULES = {
+    name: f => f.name.value.trim() ? '' : f.name.dataset.msg,
+    trade: f => f.trade.value ? '' : 'Válassz szakmát.',
+    desc: f => f.desc.value.trim() ? '' : f.desc.dataset.msg,
+    price: f => priceError(f.price.value),
+    area: f => f.area.value.trim() ? '' : f.area.dataset.msg,
+  };
+  const fieldOf = (f, name) => (name === 'trade' ? $('#trade-tiles') : f[name]).closest('.field');
+
+  function showError(f, name) {
+    const field = fieldOf(f, name), msg = RULES[name](f);
+    $('.err', field)?.remove();
+    field.classList.toggle('has-err', !!msg);
+    if (msg) field.insertAdjacentHTML('beforeend', `<p class="err" role="alert">${esc(msg)}</p>`);
+    return msg;
+  }
+
   function validate(f) {
-    clearErrors(f);
-    const checks = [
-      [f.name, !f.name.value.trim(), f.name.dataset.msg],
-      [$('#trade-tiles'), !f.trade.value, 'Válassz szakmát.'],
-      [f.desc, !f.desc.value.trim(), f.desc.dataset.msg],
-      [f.price, priceError(f.price.value), priceError(f.price.value)],
-      [f.area, !f.area.value.trim(), f.area.dataset.msg],
-    ];
-    let first = null;
-    checks.forEach(([el, bad, msg]) => {
-      if (!bad) return;
-      const field = el.closest('.field');
-      field.classList.add('has-err');
-      field.insertAdjacentHTML('beforeend', `<p class="err" role="alert">${esc(msg)}</p>`);
-      first ??= field.querySelector('input, textarea');
-    });
-    first?.focus();
-    return !first;
+    const bad = Object.keys(RULES).filter(name => showError(f, name));
+    if (bad.length) fieldOf(f, bad[0]).querySelector('input, textarea')?.focus();
+    return !bad.length;
   }
 
   function initServices() {
@@ -220,6 +223,13 @@
     });
     $('#svc-cancel').addEventListener('click', () => fillForm(null));
     f.addEventListener('input', e => { if (e.target.matches('[name=price], [name=unit], [name=from]')) updatePreview(); });
+    // Ha egy mezőn már van hiba, gépelés/választás közben újraellenőrizzük: érvényesnél azonnal eltűnik.
+    const recheck = e => {
+      const name = e.target.name;
+      if (RULES[name] && fieldOf(f, name).classList.contains('has-err')) showError(f, name);
+    };
+    f.addEventListener('input', recheck);
+    f.addEventListener('change', recheck);
     f.price.addEventListener('blur', () => { const n = parseAmount(f.price.value); if (n && !Number.isNaN(n)) f.price.value = thousands(n); });
     list.addEventListener('click', e => {
       const row = e.target.closest('.svc-row'); if (!row) return;
