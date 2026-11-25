@@ -20,7 +20,17 @@
   };
   const icon = n => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;
   const CATS = ['Villanyszerelő', 'Vízszerelő', 'Festő', 'Asztalos', 'Burkoló', 'Lakatos'];
-  const TOWNS = { Szabadka: [46.1003, 19.6656], Palics: [46.0989, 19.7617], Topolya: [45.8156, 19.6347], Zenta: [45.9275, 20.0897], Magyarkanizsa: [46.0667, 20.0583], Újvidék: [45.2671, 19.8335] };
+  // Magyar név → [lat, lng, szerb név]; a keresés mindkét névre talál (ékezet nélkül is).
+  const TOWNS = {
+    Szabadka: [46.1003, 19.6656, 'Subotica'], Palics: [46.0989, 19.7617, 'Palić'], Zenta: [45.9275, 20.0897, 'Senta'],
+    Óbecse: [45.6167, 20.0333, 'Bečej'], Topolya: [45.8156, 19.6347, 'Bačka Topola'], Magyarkanizsa: [46.0667, 20.0583, 'Kanjiža'],
+    Ada: [45.8022, 20.1289, 'Ada'], Mohol: [45.7656, 20.1306, 'Mol'], Csantavér: [45.9130, 19.7650, 'Čantavir'],
+    Kishegyes: [45.7083, 19.6681, 'Mali Iđoš'], Horgos: [46.1567, 19.9744, 'Horgoš'], Törökkanizsa: [46.0500, 20.1000, 'Novi Kneževac'],
+    Szenttamás: [45.5486, 19.7928, 'Srbobran'], Temerin: [45.4083, 19.8889, 'Temerin'], Zombor: [45.7742, 19.1122, 'Sombor'],
+    Újvidék: [45.2671, 19.8335, 'Novi Sad'],
+  };
+  const norm = t => slug(t).replace(/[^a-z0-9 ]/g, '');
+  const findTowns = q => { q = norm(q.trim()); return Object.entries(TOWNS).filter(([hu, v]) => !q || norm(hu).startsWith(q) || norm(v[2]).startsWith(q) || norm(hu).includes(q) || norm(v[2]).includes(q)); };
   const MESTEREK = [
     ['Kovács Péter', 'Villanyszerelő', 46.1051, 19.6602, 'Szabadka', '3000 din/óra'], ['Szabó Anikó', 'Festő', 46.0942, 19.6721, 'Szabadka', '2500 din/óra'],
     ['Tóth Gábor', 'Vízszerelő', 46.1120, 19.6488, 'Szabadka', '3500 din/óra'], ['Nagy Zoltán', 'Asztalos', 46.0880, 19.6430, 'Szabadka', '4000 din/óra'],
@@ -28,6 +38,9 @@
     ['Molnár Ildikó', 'Festő', 46.1040, 19.7660, 'Palics', '2600 din/óra'], ['Kiss Ferenc', 'Vízszerelő', 46.0790, 19.6800, 'Szabadka', '3000 din/óra'],
     ['Lukács Róbert', 'Lakatos', 45.8170, 19.6380, 'Topolya', '3500 din/óra'], ['Fekete Lajos', 'Burkoló', 45.9290, 20.0850, 'Zenta', '3000 din/m²'],
     ['Bodor Gyula', 'Lakatos', 46.1090, 19.6720, 'Szabadka', '3300 din/óra'], ['Papp Edit', 'Asztalos', 46.0720, 19.6560, 'Szabadka', '3800 din/óra'],
+    ['Sárközi Attila', 'Villanyszerelő', 45.9310, 20.0940, 'Zenta', '2900 din/óra'], ['Kovács Anna', 'Festő', 45.9250, 20.0810, 'Zenta', '2500 din/óra'],
+    ['Takács Imre', 'Vízszerelő', 45.6190, 20.0400, 'Óbecse', '3200 din/óra'], ['Pintér Zsolt', 'Asztalos', 45.6120, 20.0280, 'Óbecse', '3700 din/óra'],
+    ['Rácz Mónika', 'Burkoló', 45.6220, 20.0450, 'Óbecse', '3100 din/m²'],
   ].map(([name, trade, lat, lng, town, price], id) => ({ id, name, trade, lat, lng, town, price }));
   const km = (a, b) => { const R = 6371, r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r; const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
   const fmt = d => d.toFixed(1).replace('.', ',');
@@ -51,6 +64,41 @@
     });
   }
   window.V2 = { toast, confirm: confirmBox };
+
+  /* ---------- Egyedi legördülő (natív select/datalist helyett): fel/le, Enter, Esc, kívülre kattintás ----------
+     anchor: gomb vagy input; items(q) → [{ value, label, sub?, cat? }]; onPick(item). Input esetén gépelésre szűr. */
+  function dropdown(anchor, { items, onPick, selected = () => null }) {
+    const isInput = anchor.tagName === 'INPUT';
+    const box = anchor.closest('.field'); box.classList.add('dd-host');
+    const ul = document.createElement('ul'); ul.className = 'dd'; ul.setAttribute('role', 'listbox'); ul.id = `${anchor.id}-list`; ul.hidden = true;
+    box.append(ul);
+    anchor.setAttribute('aria-controls', ul.id); anchor.setAttribute('aria-expanded', 'false');
+    if (isInput) { anchor.setAttribute('role', 'combobox'); anchor.setAttribute('aria-autocomplete', 'list'); }
+    let list = [], active = -1;
+    const paint = () => {
+      ul.innerHTML = list.length ? list.map((it, i) => `<li role="option" id="${ul.id}-${i}" data-i="${i}" class="${it.cat ? `cat-${slug(it.cat)}` : ''}${i === active ? ' active' : ''}" aria-selected="${selected() === it.value}">
+          <span class="sw" aria-hidden="true"></span><span>${esc(it.label)}${it.sub ? ` <small>${esc(it.sub)}</small>` : ''}</span></li>`).join('')
+        : '<li class="dd-none" aria-disabled="true">Nincs találat</li>';
+      anchor.setAttribute('aria-activedescendant', active >= 0 ? `${ul.id}-${active}` : '');
+      ul.querySelector('.active')?.scrollIntoView({ block: 'nearest' });
+    };
+    const open = () => { list = items(isInput ? anchor.value : ''); active = Math.max(0, list.findIndex(it => it.value === selected())); if (isInput && anchor.value && !list.some(it => it.value === anchor.value)) active = 0; ul.hidden = false; anchor.setAttribute('aria-expanded', 'true'); paint(); };
+    const close = () => { ul.hidden = true; anchor.setAttribute('aria-expanded', 'false'); };
+    const pick = i => { const it = list[i]; if (!it) return; close(); onPick(it); };
+    anchor.addEventListener(isInput ? 'focus' : 'click', () => (ul.hidden || isInput ? open() : close()));
+    if (isInput) anchor.addEventListener('input', () => { open(); active = list.length ? 0 : -1; paint(); });
+    anchor.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (ul.hidden) return open(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length; paint(); }
+      else if (e.key === 'Enter' && !ul.hidden && active >= 0) { e.preventDefault(); pick(active); }
+      else if (e.key === 'Escape' && !ul.hidden) { e.preventDefault(); close(); }
+      else if (e.key === 'Tab') close();
+    });
+    ul.addEventListener('mousedown', e => e.preventDefault()); // ne vegye el a fókuszt az inputtól
+    ul.addEventListener('click', e => { const li = e.target.closest('[data-i]'); if (li) pick(+li.dataset.i); });
+    ul.addEventListener('mousemove', e => { const li = e.target.closest('[data-i]'); if (li && +li.dataset.i !== active) { active = +li.dataset.i; paint(); } });
+    document.addEventListener('click', e => { if (!box.contains(e.target)) close(); });
+    return { open, close };
+  }
 
   /* ---------- Oldalsáv ---------- */
   const ROLE_KEY = 'fmh2-role';
@@ -85,10 +133,20 @@
   /* ---------- Mesterek: keresősor + lista ⇄ térkép összekötve ---------- */
   function mesterek() {
     const sel = $('#q-trade'), town = $('#q-town'), list = $('#mlist'), count = $('#mcount');
-    sel.innerHTML = '<option value="">Bármilyen</option>' + CATS.map(c => `<option>${c}</option>`).join('');
-    let center = TOWNS.Szabadka, markers = {}, map, layer;
+    let trade = '', center = TOWNS.Szabadka, markers = {}, map, layer;
+    dropdown(sel, {
+      items: () => [{ value: '', label: 'Bármilyen' }, ...CATS.map(c => ({ value: c, label: c, cat: c }))],
+      selected: () => trade,
+      onPick: it => { trade = it.value; sel.textContent = it.label; sel.className = `dd-btn${it.cat ? ` cat-${slug(it.cat)}` : ''}`; render(); },
+    });
+    const goTown = name => { center = TOWNS[name]; town.value = name; render(); };
+    dropdown(town, {
+      items: q => findTowns(q).map(([hu, v]) => ({ value: hu, label: hu, sub: v[2] !== hu ? v[2] : '' })),
+      selected: () => town.value,
+      onPick: it => goTown(it.value),
+    });
     if (window.L) {
-      map = L.map('map', { zoomControl: true }).setView(center, 12);
+      map = L.map('map', { zoomControl: true }).setView(center.slice(0, 2), 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map);
       layer = L.layerGroup().addTo(map);
     }
@@ -97,9 +155,8 @@
       markers[id]?.getElement()?.firstChild.classList.toggle('hot', on);
     };
     function render() {
-      const trade = sel.value;
       const rows = MESTEREK.map(m => ({ m, d: km(center, [m.lat, m.lng]) })).filter(x => x.d <= 20 && (!trade || x.m.trade === trade)).sort((a, b) => a.d - b.d);
-      count.textContent = `${rows.length} mester · 20 km`;
+      count.textContent = `${rows.length} mester · 20 km · ${Object.keys(TOWNS).find(k => TOWNS[k] === center)}`;
       list.innerHTML = rows.length ? rows.map(({ m, d }, i) => `
         <a class="mrow cat-${slug(m.trade)}" style="--i:${i}" data-id="${m.id}" href="hirdetes-uj.html?kat=${encodeURIComponent(m.trade)}" title="Ajánlatot kérek tőle">
           <span class="sq">${icon(m.trade)}</span>
@@ -109,26 +166,23 @@
         : `<div class="mempty"><p class="kicker">Nincs találat</p><h3>Nincs ilyen mester a közelben.</h3><p class="muted">Válassz másik szakmát vagy települést – vagy add fel a hirdetésed, és szólunk a környékbelieknek.</p><a class="link-arrow" href="hirdetes-uj.html">Hirdetés feladása</a></div>`;
       if (!map) return;
       layer.clearLayers(); markers = {};
-      L.marker(center, { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [16, 16] }), title: 'Itt vagy' }).addTo(layer);
+      L.marker(center.slice(0, 2), { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [16, 16] }), title: 'Itt vagy' }).addTo(layer);
       rows.forEach(({ m }) => {
         const mk = L.marker([m.lat, m.lng], { title: m.name, icon: L.divIcon({ className: '', html: `<div class="pin">${initials(m.name)}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] }) }).addTo(layer);
         mk.on('mouseover', () => hot(m.id, true, true)).on('mouseout', () => hot(m.id, false)).on('click', () => location.href = `hirdetes-uj.html?kat=${encodeURIComponent(m.trade)}`);
         markers[m.id] = mk;
       });
-      const pts = rows.map(({ m }) => [m.lat, m.lng]).concat([center]);
+      const pts = rows.map(({ m }) => [m.lat, m.lng]).concat([center.slice(0, 2)]);
       map.fitBounds(L.latLngBounds(pts).pad(.15), { maxZoom: 14 });
     }
     list.addEventListener('mouseover', e => { const r = e.target.closest('.mrow'); if (r) hot(r.dataset.id, true); });
     list.addEventListener('mouseout', e => { const r = e.target.closest('.mrow'); if (r) hot(r.dataset.id, false); });
     $('#search').addEventListener('submit', e => {
       e.preventDefault();
-      const q = town.value.trim().toLowerCase();
-      const hit = Object.entries(TOWNS).find(([n]) => n.toLowerCase().startsWith(q));
-      if (q && !hit) return toast('Ismeretlen település – próbáld: Szabadka, Palics, Zenta, Topolya');
-      if (hit) { center = hit[1]; town.value = hit[0]; }
-      render();
+      const hit = findTowns(town.value)[0];
+      if (!town.value.trim() || !hit) return toast('Ismeretlen település – próbáld: Szabadka, Zenta (Senta), Óbecse (Bečej)…');
+      goTown(hit[0]);
     });
-    sel.addEventListener('change', render);
     render();
   }
 
@@ -137,7 +191,7 @@
     const f = $('#ad-form'), pv = $('#preview'), files = [];
     let cat = CATS.includes(params.get('kat')) ? params.get('kat') : '', town = '';
     $('#tiles').innerHTML = CATS.map(c => `<button type="button" class="tile cat-${slug(c)}" data-cat="${c}" aria-pressed="${c === cat}"><span class="sq">${icon(c)}</span>${c}</button>`).join('');
-    $('#towns').innerHTML = Object.keys(TOWNS).map(t => `<button type="button" data-town="${t}" aria-pressed="false">${t}</button>`).join('');
+    $('#towns').innerHTML = Object.entries(TOWNS).map(([t, v]) => `<button type="button" data-town="${t}" aria-pressed="false">${t}${v[2] !== t ? `<small>${v[2]}</small>` : ''}</button>`).join('');
     const draw = () => {
       const t = f.title.value.trim(), d = f.desc.value.trim();
       pv.className = `preview${cat ? ` cat-${slug(cat)}` : ''}`;

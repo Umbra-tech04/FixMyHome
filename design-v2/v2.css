@@ -222,3 +222,34 @@ dialog.v2-modal::backdrop { background: rgba(11,11,11,.6); }
 .contact { display: grid; border-top: 2px solid var(--ink); }
 .contact div { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--ink); }
 .contact b { font-size: 1.1rem; }
+
+/* ---------- Egyedi legördülő (.dd) – a „Milyen mester kell?” és a „Hol?” mezőhöz ---------- */
+.dd-host { position: relative; }
+.dd-btn { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: 0; padding: 4px 0; font: 700 1.9rem var(--sans); letter-spacing: -.03em; color: var(--ink); text-align: left; cursor: pointer; }
+.dd-btn[class*="cat-"]::before { content: ""; width: 18px; height: 18px; background: var(--cat); flex: none; }
+.dd-btn::after { content: ""; margin-left: auto; width: 12px; height: 12px; border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink); transform: rotate(45deg) translate(-3px, -3px); transition: transform .25s var(--ease); }
+.dd-btn[aria-expanded="true"]::after { transform: rotate(-135deg) translate(-3px, -3px); }
+.dd { position: absolute; left: -2px; right: -2px; top: 100%; z-index: 2000; margin: 0; padding: 0; list-style: none; background: var(--white); border: 2px solid var(--ink); max-height: 360px; overflow-y: auto; transform-origin: top; animation: dd-in .22s var(--ease) both; }
+.dd li { display: flex; align-items: center; gap: 14px; padding: 13px 18px; border-bottom: 1px solid var(--bg); font: 700 .82rem var(--mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.dd li small { font: 500 .72rem var(--mono); letter-spacing: .06em; text-transform: none; color: var(--grey); margin-left: 8px; }
+.dd li .sw { width: 14px; height: 14px; flex: none; background: var(--cat, transparent); outline: 1px solid var(--ink); }
+.dd li.active { background: var(--lime); }
+.dd li[aria-selected="true"]::after { content: "✓"; margin-left: auto; font-size: 1rem; }
+.dd li.dd-none { color: var(--grey); cursor: default; }
+@keyframes dd-in { from { opacity: 0; transform: scaleY(.85) translateY(-6px); } }
+
+/* ---------- Görgetősáv: vékony, szögletes, fekete csúszka (hoverre lime), világos sáv ---------- */
+.mlist, .dd { scrollbar-width: thin; scrollbar-color: var(--ink) var(--bg); }
+.mlist::-webkit-scrollbar, .dd::-webkit-scrollbar { width: 8px; }
+.mlist::-webkit-scrollbar-track, .dd::-webkit-scrollbar-track { background: var(--bg); border-left: 1px solid var(--ink); }
+.mlist::-webkit-scrollbar-thumb, .dd::-webkit-scrollbar-thumb { background: var(--ink); border-radius: 0; }
+.mlist::-webkit-scrollbar-thumb:hover, .dd::-webkit-scrollbar-thumb:hover { background: var(--lime); outline: 1px solid var(--ink); }
+.mlist::-webkit-scrollbar-button { display: none; }
+
+/* Hirdetés feladása: városcellák a szerb névvel */
+.towns button { display: grid; gap: 2px; text-align: left; }
+.towns button small { font: 500 .66rem var(--mono); letter-spacing: .08em; color: var(--grey); }
+.towns button[aria-pressed="true"] small { color: var(--line); }
+
+/* A keresősor legördülője a lista/térkép fölött nyíljon (a belépő animáció külön rétegeket hoz létre) */
+.search { position: relative; z-index: 20; }
