@@ -297,7 +297,11 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
 .cat-asztalos       { --cat: #8A5A2B; --cat-ink: #fff; }
 .cat-burkolo        { --cat: #B8532C; --cat-ink: #fff; }
 .cat-lakatos        { --cat: #2C7A78; --cat-ink: #fff; }
-.card[class*="cat-"] { border-left: 10px solid var(--cat); }
+.cat-futesszerelo   { --cat: #A8392F; --cat-ink: #fff; }
+.cat-hegeszto       { --cat: #4B5B6B; --cat-ink: #fff; }
+.cat-komuves        { --cat: #8C7A5B; --cat-ink: #fff; }
+.cat-tetofedo       { --cat: #4F6B3A; --cat-ink: #fff; }
+.card[class*="cat-"] { border-left: 10px solid var(--cat, var(--ink)); }
 .card-main { display: flex; gap: 18px; align-items: flex-start; }
 .card-main > div { flex: 1; min-width: 0; }
 .trade-icon { width: 60px; height: 60px; flex: none; display: grid; place-items: center; background: var(--cat, var(--ink)); color: var(--cat-ink, #fff); border: var(--b) solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transition: transform .3s var(--ease); }

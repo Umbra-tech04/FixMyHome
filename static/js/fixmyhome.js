@@ -56,7 +56,11 @@
         e.preventDefault();
         localStorage.setItem(KEY, b.dataset.theme);
         const link = document.getElementById('theme-css');
-        if (link && THEMES[b.dataset.theme]) link.href = THEMES[b.dataset.theme];
+        if (link && THEMES[b.dataset.theme]) {
+          // Új betűtípus = új menüszélességek: töltés után a csúszó aláhúzást újra kell igazítani.
+          link.addEventListener('load', () => document.fonts.ready.then(() => window.dispatchEvent(new Event('fmh:theme'))), { once: true });
+          link.href = THEMES[b.dataset.theme];
+        }
         document.documentElement.dataset.theme = b.dataset.theme;
         $$('[data-theme]:is(button, a)').forEach(x => x.setAttribute('aria-pressed', x === b));
       });
@@ -213,6 +217,7 @@
     links.forEach(a => a.addEventListener('mouseenter', () => move(a)));
     $('.main-nav').addEventListener('mouseleave', () => move(home));
     document.fonts?.ready.then(() => move(home));
+    window.addEventListener('fmh:theme', () => move(home));
   }
 
   function initProfile() {
