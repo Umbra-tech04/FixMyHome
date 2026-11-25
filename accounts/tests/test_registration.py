@@ -84,3 +84,12 @@ class RegistrationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("password1", response.context["form"].errors)
         self.assertEqual(User.objects.count(), 0)
+
+
+class RegistrationLimitsTests(TestCase):
+    def test_overlong_email_is_rejected_by_the_form(self):
+        long_email = "a" * 250 + "@example.com"
+        response = self.client.post(reverse("register"), valid_data(email=long_email))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("email", response.context["form"].errors)
+        self.assertEqual(User.objects.count(), 0)

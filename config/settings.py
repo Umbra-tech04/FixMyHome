@@ -14,19 +14,29 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Helyi fejlesztésnél a .env fájlból jönnek a beállítások (a már beállított környezeti változók elsőbbséget élveznek).
+load_dotenv(os.environ.get("DOTENV_FILE", BASE_DIR / ".env"))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-me")
+DEBUG = os.environ.get("DEBUG", "0") == "1"
+
+SECRET_KEY = os.environ.get("SECRET_KEY", "")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("A SECRET_KEY környezeti változó kötelező, ha a DEBUG ki van kapcsolva.")
+    SECRET_KEY = "dev-only-insecure-key-change-me"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "1") == "1"
 
 ALLOWED_HOSTS = [h for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h]
 

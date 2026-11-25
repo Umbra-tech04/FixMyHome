@@ -11,7 +11,7 @@ REGISTRATION_ROLES = [(Role.USER.value, Role.USER.label), (Role.MASTER.value, Ro
 
 class RegistrationForm(forms.Form):
     name = forms.CharField(label="Név", max_length=150)
-    email = forms.EmailField(label="E-mail")
+    email = forms.EmailField(label="E-mail", max_length=254)
     phone = forms.CharField(label="Telefon", max_length=30)
     password1 = forms.CharField(label="Jelszó", widget=forms.PasswordInput)
     password2 = forms.CharField(label="Jelszó újra", widget=forms.PasswordInput)

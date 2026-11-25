@@ -46,6 +46,10 @@ class User(AbstractUser):
 
     objects = UserManager()
 
+    def clean(self):
+        super().clean()
+        self.email = self.email.strip().lower()
+
     def save(self, *args, **kwargs):
         self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
