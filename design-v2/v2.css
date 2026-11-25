@@ -247,18 +247,26 @@ dialog.v2-modal::backdrop { background: rgba(11,11,11,.6); }
 .dd li.dd-none { color: var(--grey); cursor: default; }
 @keyframes dd-in { from { opacity: 0; transform: scaleY(.85) translateY(-6px); } }
 
-/* ---------- Görgetősáv: vastag (14px), éles szélű, fekete csúszka (hoverre lime), világos sáv ----------
+/* ---------- Görgetősáv: 28px, éles szélű, a tartalom mellett (nem alatta) ----------
    A Chrome 121+ figyelmen kívül hagyja a ::-webkit-scrollbar szabályokat, ha scrollbar-width/-color is van az elemen,
-   ezért az a Firefoxé, és csak @supports mögött. */
+   ezért az a Firefoxé, és csak @supports mögött. A scrollbar-gutter fenntartja a sáv helyét, így a sorok és a
+   sorvonalak a sáv előtt érnek véget; a lista és a térkép között a .mlist 2px-es jobb kerete a választóvonal. */
+.mlist { scrollbar-gutter: stable; }
 @supports not selector(::-webkit-scrollbar) {
   .mlist, .dd { scrollbar-width: auto; scrollbar-color: var(--ink) #D6D6D2; }
 }
-.mlist::-webkit-scrollbar, .dd::-webkit-scrollbar { width: 14px; height: 14px; }
+.mlist::-webkit-scrollbar, .dd::-webkit-scrollbar { width: 28px; height: 28px; }
 .mlist::-webkit-scrollbar-track, .dd::-webkit-scrollbar-track { background: #D6D6D2; border-left: 2px solid var(--ink); }
-.mlist::-webkit-scrollbar-thumb, .dd::-webkit-scrollbar-thumb { background: var(--ink); border-radius: 0; border: 3px solid #D6D6D2; border-left-width: 2px; }
-.mlist::-webkit-scrollbar-thumb:hover, .dd::-webkit-scrollbar-thumb:hover { background: var(--lime); border-color: #D6D6D2; box-shadow: inset 0 0 0 1px var(--ink); }
+.mlist::-webkit-scrollbar-thumb, .dd::-webkit-scrollbar-thumb { background: var(--ink); border-radius: 0; border: 4px solid #D6D6D2; border-left-width: 6px; min-height: 48px; }
+.mlist::-webkit-scrollbar-thumb:hover, .dd::-webkit-scrollbar-thumb:hover { background: var(--lime); box-shadow: inset 0 0 0 2px var(--ink); }
+.mlist::-webkit-scrollbar-thumb:active, .dd::-webkit-scrollbar-thumb:active { background: var(--lime); }
 .mlist::-webkit-scrollbar-button, .dd::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 .mlist::-webkit-scrollbar-corner, .dd::-webkit-scrollbar-corner { background: #D6D6D2; }
+.dd::-webkit-scrollbar { width: 20px; }
+
+/* Kurzor a HOL? mezőben csak gépelés közben látszik */
+.dd-input input { caret-color: transparent; }
+.dd-input input.is-typing { caret-color: var(--ink); }
 
 /* Hirdetés feladása: városcellák a szerb névvel */
 .towns button { display: grid; gap: 2px; text-align: left; }

@@ -83,16 +83,19 @@
       ul.querySelector('.active')?.scrollIntoView({ block: 'nearest' });
     };
     const open = (all = false) => { list = items(isInput && !all ? anchor.value : ''); active = Math.max(0, list.findIndex(it => it.value === selected())); if (isInput && anchor.value && !list.some(it => it.value === anchor.value)) active = 0; ul.hidden = false; anchor.setAttribute('aria-expanded', 'true'); paint(); };
-    const close = () => { ul.hidden = true; anchor.setAttribute('aria-expanded', 'false'); box.querySelector('.dd-toggle')?.setAttribute('aria-expanded', 'false'); };
+    const close = () => { ul.hidden = true; anchor.setAttribute('aria-expanded', 'false'); anchor.classList.remove('is-typing'); box.querySelector('.dd-toggle')?.setAttribute('aria-expanded', 'false'); };
     const pick = i => { const it = list[i]; if (!it) return; close(); onPick(it); if (isInput) anchor.blur(); /* választás után ne villogjon a kurzor */ };
     anchor.addEventListener(isInput ? 'focus' : 'click', () => (ul.hidden || isInput ? open() : close()));
     const toggle = box.querySelector('.dd-toggle');
     toggle?.addEventListener('click', () => { if (ul.hidden) { open(true); toggle.setAttribute('aria-expanded', 'true'); } else { close(); } });
-    if (isInput) anchor.addEventListener('input', () => { open(); active = list.length ? 0 : -1; paint(); });
+    if (isInput) {
+      anchor.addEventListener('input', () => { anchor.classList.add('is-typing'); open(); active = list.length ? 0 : -1; paint(); });
+      anchor.addEventListener('blur', () => { anchor.classList.remove('is-typing'); close(); });
+    }
     anchor.addEventListener('keydown', e => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (ul.hidden) return open(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length; paint(); }
       else if (e.key === 'Enter' && !ul.hidden && active >= 0) { e.preventDefault(); pick(active); }
-      else if (e.key === 'Escape' && !ul.hidden) { e.preventDefault(); close(); }
+      else if (e.key === 'Escape') { e.preventDefault(); close(); if (isInput) anchor.blur(); }
       else if (e.key === 'Tab') close();
     });
     ul.addEventListener('mousedown', e => e.preventDefault()); // ne vegye el a fókuszt az inputtól
@@ -181,6 +184,7 @@
     list.addEventListener('mouseout', e => { const r = e.target.closest('.mrow'); if (r) hot(r.dataset.id, false); });
     $('#search').addEventListener('submit', e => {
       e.preventDefault();
+      town.blur();
       const hit = findTowns(town.value)[0];
       if (!town.value.trim() || !hit) return toast('Ismeretlen település – próbáld: Szabadka, Zenta (Senta), Óbecse (Bečej)…');
       goTown(hit[0]);
