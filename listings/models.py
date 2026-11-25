@@ -103,7 +103,7 @@ class Application(models.Model):
 
     # Az állapot nincs tárolva: az ad.chosen_master-ből következik.
     STATUS_LABELS = {"pending": "Függőben", "accepted": "Elfogadva", "rejected": "Elutasítva"}
-    STATUS_BADGES = {"pending": "badge-open", "accepted": "badge-progress", "rejected": "badge-withdrawn"}
+    STATUS_BADGES = {"pending": "badge-pending", "accepted": "badge-accepted", "rejected": "badge-rejected"}
 
     @property
     def status(self):

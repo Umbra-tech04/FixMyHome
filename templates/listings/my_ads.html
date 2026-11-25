@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Hirdetéseim{% endblock %}
+{% block content %}
+  <h1 class="page-title">Hirdetéseim</h1>
+  <div class="toolbar"><a class="btn btn-primary" href="{% url 'listings:ad_create' %}">Új hirdetés</a></div>
+  {% if ads %}
+    <ul class="card-list">
+      {% for ad in ads %}
+        <li class="card">
+          <a href="{% url 'listings:ad_detail' ad.pk %}"><strong>{{ ad.title }}</strong></a>
+          {% include "listings/_ad_badge.html" %}
+          <p>{{ ad.category }} · {{ ad.location_text }} · {{ ad.created_at|timesince }} ezelőtt</p>
+          <p>Jelentkezők: {{ ad.application_count }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">
+      <p>Még nincs hirdetésed.</p>
+      <a class="btn btn-primary" href="{% url 'listings:ad_create' %}">Add fel az elsőt</a>
+    </div>
+  {% endif %}
+{% endblock %}

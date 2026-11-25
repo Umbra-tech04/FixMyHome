@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{{ ad.title }}{% endblock %}
+{% block content %}
+  <h1 class="page-title">{{ ad.title }}</h1>
+  <div class="card">
+    {% include "listings/_ad_badge.html" %}
+    <p>{{ ad.category }} · {{ ad.location_text }} · {{ ad.created_at|timesince }} ezelőtt</p>
+    <p>{{ ad.description|linebreaksbr }}</p>
+    {% for image in images %}
+      <a href="{{ image.image.url }}"><img src="{{ image.image.url }}" alt="Kép a hirdetéshez: {{ ad.title }}" width="240"></a>
+    {% endfor %}
+  </div>
+
+  {% if user == ad.owner %}
+    <div class="toolbar">
+      {% if ad.is_editable %}<a class="btn btn-secondary" href="{% url 'listings:ad_edit' ad.pk %}">Szerkesztés</a>{% endif %}
+      {% if can_close %}
+        <form method="post" action="{% url 'listings:ad_set_status' ad.pk %}">
+          {% csrf_token %}<input type="hidden" name="status" value="done">
+          <button type="submit" class="btn btn-primary">Munka kész, lezárom</button>
+        </form>
+      {% endif %}
+      {% if can_withdraw %}
+        <form method="post" action="{% url 'listings:ad_set_status' ad.pk %}" onsubmit="return confirm('Biztosan visszavonod a hirdetést?')">
+          {% csrf_token %}<input type="hidden" name="status" value="withdrawn">
+          <button type="submit" class="btn btn-danger">Hirdetés visszavonása</button>
+        </form>
+      {% endif %}
+    </div>
+
+    <h2>Jelentkezők</h2>
+    {% if applications %}
+      <ul class="card-list">
+        {% for application in applications %}
+          <li class="card">
+            <span class="avatar" aria-hidden="true">{{ application.master.name|first }}</span>
+            <strong>{{ application.master.name }}</strong>
+            {% if application.master.master_profile %}· {{ application.master.master_profile.profession }} · {{ application.master.master_profile.service_area }}{% endif %}
+            <span class="badge {{ application.badge_class }}">{{ application.status_label }}</span>
+            {% if application.message %}<p>{{ application.message|linebreaksbr }}</p>{% endif %}
+            {% if ad.accepts_applications %}
+              <form method="post" action="{% url 'listings:choose_master' ad.pk application.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Őt választom</button>
+              </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state"><p>Még nem jelentkezett mester.</p></div>
+    {% endif %}
+
+  {% elif user.role == "master" %}
+    <h2>Jelentkezés</h2>
+    {% if my_application %}
+      <div class="card">
+        <span class="badge {{ my_application.badge_class }}">{{ my_application.status_label }}</span>
+        {% if my_application.message %}<p>{{ my_application.message|linebreaksbr }}</p>{% endif %}
+        {% if ad.accepts_applications %}
+          <form method="post" action="{% url 'listings:withdraw_application' ad.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">Jelentkezés visszavonása</button>
+          </form>
+        {% endif %}
+      </div>
+    {% elif ad.accepts_applications %}
+      <form method="post" action="{% url 'listings:apply' ad.pk %}" class="card">
+        {% csrf_token %}
+        {% include "listings/_form_fields.html" with form=application_form %}
+        <button type="submit" class="btn btn-primary">Jelentkezem</button>
+      </form>
+    {% else %}
+      <div class="empty-state"><p>Erre a hirdetésre már nem lehet jelentkezni.</p></div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

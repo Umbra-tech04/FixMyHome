@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Közeli mesterek{% endblock %}
+{% block content %}
+  <h1 class="page-title">Közeli mesterek</h1>
+
+  <form method="post" action="{% url 'listings:save_location' %}" class="card" id="location-form">
+    {% csrf_token %}
+    {% include "listings/_form_fields.html" with form=location_form %}
+    {% include "listings/_cities_datalist.html" %}
+    <button type="submit" class="btn btn-secondary">Hely mentése</button>
+  </form>
+
+  {% if location %}
+    <div class="toolbar">
+      <span>Körzet:</span>
+      {% for r in radius_choices %}
+        <a class="chip" href="?r={{ r }}"{% if r == radius %} aria-current="true"{% endif %}>{{ r }} km</a>
+      {% endfor %}
+    </div>
+    <div id="map" data-api="{% url 'listings:api_masters' %}?lat={{ location.lat }}&amp;lng={{ location.lng }}&amp;r={{ radius }}"></div>
+    {% if masters %}
+      <ul class="card-list">
+        {% for profile in masters %}
+          <li class="card">
+            <span class="avatar" aria-hidden="true">{{ profile.user.name|first }}</span>
+            <strong>{{ profile.user.name }}</strong> · {{ profile.profession }} · {{ profile.service_area }}
+            <span class="pill-distance">{{ profile.distance|floatformat:1 }} km</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state">
+        <p>{{ radius|floatformat:"0" }} km-en belül most nincs elérhető mester.</p>
+        {% if suggestion %}<a class="btn btn-primary" href="?r={{ suggestion }}">Keresés {{ suggestion }} km-es körzetben</a>{% endif %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="empty-state"><p>Add meg a helyed, és megmutatjuk a közeli mestereket.</p></div>
+  {% endif %}
+{% endblock %}

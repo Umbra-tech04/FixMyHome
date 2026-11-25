@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Környékbeli hirdetések{% endblock %}
+{% block content %}
+  <h1 class="page-title">Környékbeli hirdetések</h1>
+  {% if ads is None %}
+    <div class="empty-state">
+      <p>Add meg a szakmádat és a településedet, hogy lásd a közeli hirdetéseket.</p>
+      <a class="btn btn-primary" href="{% url 'listings:master_profile' %}">Adataim megadása</a>
+    </div>
+  {% else %}
+    <div class="toolbar">
+      <span>{{ profile.profession }} · Körzet:</span>
+      {% for r in radius_choices %}
+        <a class="chip" href="?r={{ r }}"{% if r == radius %} aria-current="true"{% endif %}>{{ r }} km</a>
+      {% endfor %}
+    </div>
+    {% if ads %}
+      <ul class="card-list">
+        {% for ad in ads %}
+          <li class="card">
+            <a href="{% url 'listings:ad_detail' ad.pk %}"><strong>{{ ad.title }}</strong></a>
+            <p>{{ ad.category }} · {{ ad.location_text }} · {{ ad.created_at|timesince }} ezelőtt</p>
+            <span class="pill-distance">{{ ad.distance|floatformat:1 }} km</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state">
+        <p>{{ radius|floatformat:"0" }} km-en belül most nincs nyitott hirdetés a szakmádban.</p>
+        <a class="btn btn-secondary" href="?r=50">Keresés 50 km-en belül</a>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

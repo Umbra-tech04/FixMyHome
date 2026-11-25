@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Szolgáltatásaim{% endblock %}
+{% block content %}
+  <h1 class="page-title">Szolgáltatásaim</h1>
+  <div class="toolbar"><a class="btn btn-primary" href="{% url 'listings:service_create' %}">Új szolgáltatás</a></div>
+  {% if services %}
+    <ul class="card-list">
+      {% for service in services %}
+        <li class="card">
+          <strong>{{ service.title }}</strong>
+          {% if service.is_active %}<span class="badge badge-open">Közzétéve</span>{% else %}<span class="badge badge-withdrawn">Szüneteltetve</span>{% endif %}
+          <p>{{ service.category }} · {{ service.service_area }} · {{ service.get_price_category_display }}</p>
+          <div class="toolbar">
+            <a class="btn btn-secondary" href="{% url 'listings:service_edit' service.pk %}">Szerkesztés</a>
+            <form method="post" action="{% url 'listings:service_toggle' service.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-secondary">{% if service.is_active %}Szüneteltetés{% else %}Újraindítás{% endif %}</button>
+            </form>
+            <a class="btn btn-danger" href="{% url 'listings:service_delete' service.pk %}">Törlés</a>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">
+      <p>Még nem hirdetsz szolgáltatást.</p>
+      <a class="btn btn-primary" href="{% url 'listings:service_create' %}">Hirdess egyet</a>
+    </div>
+  {% endif %}
+{% endblock %}

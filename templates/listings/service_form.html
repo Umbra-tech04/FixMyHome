@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{% if service.pk %}Szolgáltatás szerkesztése{% else %}Új szolgáltatás{% endif %}{% endblock %}
+{% block content %}
+  <h1 class="page-title">{% if service.pk %}Szolgáltatás szerkesztése{% else %}Új szolgáltatás{% endif %}</h1>
+  <form method="post" class="card">
+    {% csrf_token %}
+    {% include "listings/_form_fields.html" %}
+    {% include "listings/_cities_datalist.html" %}
+    <div class="toolbar">
+      <button type="submit" class="btn btn-primary">Mentés</button>
+      <a class="btn btn-secondary" href="{% url 'listings:service_list' %}">Mégse</a>
+    </div>
+  </form>
+{% endblock %}

@@ -11,6 +11,16 @@
     {% block nav %}
       <nav>
         {% if user.is_authenticated %}
+          {% if user.role == "user" %}
+            <a href="{% url 'listings:ad_create' %}">Hirdetés feladása</a>
+            <a href="{% url 'listings:my_ads' %}">Hirdetéseim</a>
+            <a href="{% url 'listings:nearby_masters' %}">Közeli mesterek</a>
+          {% elif user.role == "master" %}
+            <a href="{% url 'listings:master_ads' %}">Környékbeli hirdetések</a>
+            <a href="{% url 'listings:my_jobs' %}">Munkáim</a>
+            <a href="{% url 'listings:service_list' %}">Szolgáltatásaim</a>
+            <a href="{% url 'listings:master_profile' %}">Adataim</a>
+          {% endif %}
           <span>{{ user.name }} ({{ user.get_role_display }})</span>
           <form method="post" action="{% url 'logout' %}" style="display:inline">
             {% csrf_token %}
@@ -24,6 +34,11 @@
     {% endblock %}
   </header>
   <main>
+    {% if messages %}
+      <ul role="status">
+        {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+      </ul>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 </body>

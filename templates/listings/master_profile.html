@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Adataim{% endblock %}
+{% block content %}
+  <h1 class="page-title">Mester alapadatai</h1>
+  <form method="post" class="card">
+    {% csrf_token %}
+    {% include "listings/_form_fields.html" %}
+    {% include "listings/_cities_datalist.html" %}
+    <button type="submit" class="btn btn-primary">Mentés</button>
+  </form>
+{% endblock %}

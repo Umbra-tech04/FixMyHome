@@ -19,6 +19,16 @@ Tesztek: `python manage.py test`.
 
 Helyben SQLite (nulla beállítás). Élesben PostgreSQL: állítsd be a `DATABASE_URL` környezeti változót (lásd `.env.example`).
 
+Helyi PostgreSQL (opcionális): `docker compose up -d db`, majd a `.env`-be: `DATABASE_URL=postgres://fixmyhome:fixmyhome@localhost:5432/fixmyhome`.
+
+## Bemutató adatok
+
+`python manage.py seed_demo` (többször is futtatható). Minden fiók jelszava: `test1234`.
+
+- `felhasznalo@fixmyhome.test`: felhasználó (Szabadka), 3 nyitott hirdetéssel
+- `villanyszerelo@` (Szabadka), `vizszerelo@` (Palics), `festo@` (Topolya), `asztalos@` (Zenta, nem elérhető): mesterek, mind `@fixmyhome.test`
+- `ugyfelszolgalat@fixmyhome.test`: ügyfélszolgálat
+
 ## Felépítés
 
 - `config/` – Django-beállítások, URL-ek

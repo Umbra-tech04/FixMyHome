@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Munkáim{% endblock %}
+{% block content %}
+  <h1 class="page-title">Munkáim</h1>
+  <div class="toolbar">
+    {% for key, label in filters %}
+      <a class="chip" href="?allapot={{ key }}"{% if key == selected %} aria-current="true"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </div>
+  {% if jobs %}
+    <ul class="card-list">
+      {% for ad in jobs %}
+        <li class="card">
+          <a href="{% url 'listings:ad_detail' ad.pk %}"><strong>{{ ad.title }}</strong></a>
+          {% include "listings/_ad_badge.html" %}
+          <p>Ügyfél: {{ ad.owner.name }} · Helyszín: {{ ad.location_text }}</p>
+          <p>{{ ad.description|truncatewords:30 }}</p>
+          <p>Időpont: Még nincs időpont</p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">
+      <p>Ebben a szűrésben nincs munkád.</p>
+      <a class="btn btn-primary" href="{% url 'listings:master_ads' %}">Környékbeli hirdetések</a>
+    </div>
+  {% endif %}
+{% endblock %}

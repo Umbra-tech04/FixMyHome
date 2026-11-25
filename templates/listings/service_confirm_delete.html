@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Szolgáltatás törlése{% endblock %}
+{% block content %}
+  <h1 class="page-title">Szolgáltatás törlése</h1>
+  <form method="post" class="card">
+    {% csrf_token %}
+    <p>Biztosan törlöd: <strong>{{ service.title }}</strong>? Ez nem vonható vissza.</p>
+    <div class="toolbar">
+      <button type="submit" class="btn btn-danger">Igen, törlöm</button>
+      <a class="btn btn-secondary" href="{% url 'listings:service_list' %}">Mégse</a>
+    </div>
+  </form>
+{% endblock %}
