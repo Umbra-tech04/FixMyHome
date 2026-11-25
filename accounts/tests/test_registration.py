@@ -93,3 +93,54 @@ class RegistrationLimitsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("email", response.context["form"].errors)
         self.assertEqual(User.objects.count(), 0)
+
+
+class RegistrationRestrictionTests(TestCase):
+    url = reverse("register")
+
+    def test_user_cannot_fill_master_only_fields(self):
+        extra = {
+            "profession": Category.objects.get(name="Vízszerelő").pk,
+            "service_area": "Szabadka",
+            "contact": "+381 60 222 333",
+        }
+        for field, value in extra.items():
+            with self.subTest(field=field):
+                response = self.client.post(self.url, valid_data(**{field: value}))
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(field, response.context["form"].errors)
+                self.assertEqual(User.objects.count(), 0)
+
+    def test_master_only_fields_are_marked_for_the_browser(self):
+        response = self.client.get(self.url)
+        self.assertContains(response, 'data-master-only="1"', count=3)
+
+    def test_phone_must_look_like_a_phone_number(self):
+        for bad in ("abc", "123", "+381 60 abc 123", "1" * 30):
+            with self.subTest(phone=bad):
+                response = self.client.post(self.url, valid_data(phone=bad))
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("phone", response.context["form"].errors)
+                self.assertEqual(User.objects.count(), 0)
+
+    def test_common_phone_formats_are_accepted(self):
+        for index, good in enumerate(("+381 60 111 222", "060/111-222", "(021) 123 456", "+36 30 123 4567")):
+            with self.subTest(phone=good):
+                response = self.client.post(self.url, valid_data(email=f"p{index}@example.com", phone=good))
+                self.assertEqual(response.status_code, 302)
+
+    def test_name_needs_letters_and_two_characters(self):
+        for bad in ("A", "12", "---"):
+            with self.subTest(name=bad):
+                response = self.client.post(self.url, valid_data(name=bad))
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("name", response.context["form"].errors)
+        response = self.client.post(self.url, valid_data(name="  Kovács   Éva "))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(User.objects.get().name, "Kovács Éva")
+
+    def test_password_requirements_are_shown(self):
+        from django.contrib.auth.password_validation import password_validators_help_text_html
+
+        response = self.client.get(self.url)
+        self.assertContains(response, password_validators_help_text_html(), html=True)
