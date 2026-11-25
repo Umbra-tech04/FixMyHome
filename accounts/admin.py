@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from accounts.models import User
+from accounts.models import MasterProfile, User
 
 
 @admin.register(User)
@@ -19,3 +19,9 @@ class UserAdmin(DjangoUserAdmin):
     add_fieldsets = (
         (None, {"classes": ("wide",), "fields": ("email", "name", "role", "password1", "password2")}),
     )
+
+
+@admin.register(MasterProfile)
+class MasterProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "profession", "service_area")
+    search_fields = ("user__email", "user__name")

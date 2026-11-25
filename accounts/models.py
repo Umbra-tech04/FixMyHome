@@ -52,3 +52,15 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class MasterProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="master_profile")
+    profession = models.ForeignKey("listings.Category", on_delete=models.PROTECT, verbose_name="szakma")
+    service_area = models.CharField("működési terület", max_length=200)
+    contact = models.CharField("elérhetőség", max_length=200)
+    latitude = models.FloatField("szélesség", null=True, blank=True)
+    longitude = models.FloatField("hosszúság", null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user} ({self.profession})"
