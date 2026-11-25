@@ -32,7 +32,7 @@ h1, h2, h3 { margin: 0; line-height: .95; letter-spacing: -.04em; font-weight: 7
 .sb-logo b { color: var(--lime); }
 .sb-nav { display: grid; border-top: 1px solid #2A2A2A; }
 .sb-nav a { display: grid; gap: 2px; padding: 18px 24px; text-decoration: none; border-bottom: 1px solid #2A2A2A; transition: background .2s, padding .25s var(--ease); }
-.sb-nav a small { font: 500 .7rem var(--mono); letter-spacing: .16em; color: var(--line); }
+.sb-nav a small { font: 500 .7rem var(--mono); letter-spacing: .16em; color: #8A8A86; }
 .sb-nav a span { font: 700 1.35rem/1.05 var(--sans); letter-spacing: -.03em; text-transform: uppercase; }
 .sb-nav a:hover { background: #1A1A1A; padding-left: 30px; }
 .sb-nav a[aria-current="page"] { background: var(--lime); color: var(--ink); }
@@ -46,7 +46,7 @@ h1, h2, h3 { margin: 0; line-height: .95; letter-spacing: -.04em; font-weight: 7
 .sb-profile b { display: block; font-weight: 600; }
 .sb-profile small { font: 500 .68rem var(--mono); letter-spacing: .14em; color: var(--lime); text-transform: uppercase; }
 .sb-role { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #3A3A3A; }
-.sb-role button { background: none; border: 0; color: var(--line); font: 600 .68rem var(--mono); letter-spacing: .12em; text-transform: uppercase; padding: 9px 4px; cursor: pointer; }
+.sb-role button { background: none; border: 0; color: #8A8A86; font: 600 .68rem var(--mono); letter-spacing: .12em; text-transform: uppercase; padding: 9px 4px; cursor: pointer; }
 .sb-role button[aria-pressed="true"] { background: #fff; color: var(--ink); }
 
 /* ---------- Tartalom ---------- */
@@ -54,8 +54,9 @@ h1, h2, h3 { margin: 0; line-height: .95; letter-spacing: -.04em; font-weight: 7
 .v2-main > * { animation: rise .6s var(--ease) both; }
 .v2-main > :nth-child(2) { animation-delay: .08s; } .v2-main > :nth-child(3) { animation-delay: .16s; } .v2-main > :nth-child(n+4) { animation-delay: .24s; }
 .kicker { font: 500 .78rem var(--mono); letter-spacing: .16em; text-transform: uppercase; margin: 0 0 14px; display: flex; gap: 12px; align-items: center; }
-.kicker::before { content: ""; width: 28px; height: 2px; background: var(--ink); }
-.huge { font-size: clamp(3.2rem, 7vw, 6.2rem); letter-spacing: -.055em; line-height: .88; }
+
+/* A mester-oldalak .m-title-jével egyező: NAGYBETŰS, ~83px */
+.huge { font-size: clamp(3rem, 5.4vw, 5.2rem); letter-spacing: -.045em; line-height: .9; text-transform: uppercase; }
 
 /* ---------- Sávgombok: teljes szélesség, 64px, nyíl jobbra; hoverkor invertál, a nyíl kicsúszik ---------- */
 .bar-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 64px; padding: 0 24px; background: var(--ink); color: var(--lime); border: 2px solid var(--ink);
