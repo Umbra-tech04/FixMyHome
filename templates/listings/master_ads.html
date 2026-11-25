@@ -24,13 +24,21 @@
       <ul class="card-list">
         {% for ad in ads %}
           <li class="card hoverable cat-{{ ad.category.name|slugify }}">
-            <div class="card-top">
-              <span>{% include "listings/_ad_badge.html" %}{% if ad.pk in applied_ids %} <span class="badge badge-pending">Jelentkeztél</span>{% endif %}</span>
-              <span class="pill-distance">{{ ad.distance|floatformat:1 }}<small>km</small></span>
+            <div class="card-main">
+              <span class="trade-icon" aria-hidden="true">{% icon ad.category.name %}</span>
+              <div>
+                <div class="card-top">
+                  <div><h3>{{ ad.title }}</h3><span class="trade-label">{{ ad.category }}</span></div>
+                  <span class="pill-distance">{{ ad.distance|floatformat:1 }}<small>km</small></span>
+                </div>
+                <p class="card-desc">{{ ad.description }}</p>
+                <div class="card-facts">
+                  {% include "listings/_ad_badge.html" %}{% if ad.pk in applied_ids %}<span class="badge badge-pending">Jelentkeztél</span>{% endif %}
+                  <span>{% icon "pin" %} {{ ad.location_text }}</span>
+                  <span>{% icon "clock" %} {{ ad.created_at|timesince }} ezelőtt</span>
+                </div>
+              </div>
             </div>
-            <h3>{{ ad.title }}</h3>
-            <p class="card-sub">{{ ad.location_text }} · {{ ad.created_at|timesince }} ezelőtt</p>
-            <p class="muted">{{ ad.description|truncatechars:90 }}</p>
             <div class="card-actions"><a class="btn btn-secondary btn-sm" href="{% url 'listings:ad_detail' ad.pk %}">Megnézem</a></div>
           </li>
         {% endfor %}

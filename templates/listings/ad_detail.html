@@ -27,9 +27,21 @@
     {% endif %}
   </div>
 
-  <div class="card">
-    <div class="card-top">{% include "listings/_ad_badge.html" %}<p class="card-sub">{% icon ad.category.name %}{{ ad.category }} · {{ ad.location_text }} · {{ ad.created_at|timesince }} ezelőtt</p></div>
-    <p>{{ ad.description|linebreaksbr }}</p>
+  <div class="card cat-{{ ad.category.name|slugify }}">
+    <div class="card-main">
+      <span class="trade-icon" aria-hidden="true">{% icon ad.category.name %}</span>
+      <div>
+        <div class="card-top">
+          <div><span class="trade-label">{{ ad.category }}</span></div>
+          {% include "listings/_ad_badge.html" %}
+        </div>
+        <div class="card-facts">
+          <span>{% icon "pin" %} {{ ad.location_text }}</span>
+          <span>{% icon "clock" %} feladva {{ ad.created_at|timesince }} ezelőtt</span>
+        </div>
+        <p>{{ ad.description|linebreaksbr }}</p>
+      </div>
+    </div>
     {% if images %}<div class="gallery">{% for image in images %}<a href="{{ image.image.url }}"><img src="{{ image.image.url }}" alt="Kép a hirdetéshez: {{ ad.title }}"></a>{% endfor %}</div>{% endif %}
     <ol class="stepper{% if ad.status == 'withdrawn' %} is-withdrawn{% endif %}" aria-label="Hirdetés állapota">
       <li class="{% if ad.status == 'open' %}current{% elif ad.status != 'withdrawn' %}done{% endif %}">Nyitott</li>
@@ -44,13 +56,18 @@
     <ul class="card-list">
       {% for application in applications %}
         {% with profile=application.master.master_profile %}
-        <li class="card">
-          <div class="card-top">
-            <div><h3>{{ application.master.name }}</h3>{% if profile %}<span class="chip chip-trade">{% icon profile.profession.name %}{{ profile.profession }}</span>{% endif %}</div>
-            <span class="badge {{ application.badge_class }}">{{ application.status_label }}</span>
+        <li class="card{% if profile %} cat-{{ profile.profession.name|slugify }}{% endif %}">
+          <div class="card-main">
+            <span class="trade-icon" aria-hidden="true">{% if profile %}{% icon profile.profession.name %}{% else %}{% icon "user" %}{% endif %}</span>
+            <div>
+              <div class="card-top">
+                <div><h3>{{ application.master.name }}</h3>{% if profile %}<span class="trade-label">{{ profile.profession }}</span>{% endif %}</div>
+                <span class="badge {{ application.badge_class }}">{{ application.status_label }}</span>
+              </div>
+              {% if application.message %}<p>„{{ application.message }}”</p>{% endif %}
+              <p class="rating-none">Még nincs értékelés</p>
+            </div>
           </div>
-          {% if application.message %}<p>„{{ application.message }}”</p>{% endif %}
-          <p class="rating-none">Még nincs értékelés</p>
           {% if ad.accepts_applications %}
             <div class="card-actions">
               <form method="post" action="{% url 'listings:choose_master' ad.pk application.pk %}" data-confirm="{{ application.master.name }} kiválasztása" data-confirm-body="A többi jelentkezést elutasítjuk, a hirdetés Folyamatban állapotba kerül." data-confirm-ok="Kiválasztom">
@@ -86,7 +103,7 @@
     {% endif %}
   </div>
 
-  <div class="card">
+  <div class="card cat-{{ ad.category.name|slugify }}">
     <div class="card-top">{% include "listings/_ad_badge.html" %}{% if distance is not None %}<span class="pill-distance">{{ distance|floatformat:1 }}<small>km</small></span>{% endif %}</div>
     <p class="card-sub">{% icon "user" %}{{ ad.owner.name }} · {% icon "pin" %}{{ ad.location_text }} · feladva {{ ad.created_at|timesince }} ezelőtt</p>
     <p>{{ ad.description|linebreaksbr }}</p>

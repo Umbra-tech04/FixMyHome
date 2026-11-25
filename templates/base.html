@@ -24,7 +24,7 @@
 <body>
   {% with url_name=request.resolver_match.url_name %}
   <header class="site-header"><div class="container">
-    <a class="logo" href="{% if user.role == 'user' %}{% url 'listings:nearby_masters' %}{% elif user.role == 'master' %}{% url 'listings:master_ads' %}{% else %}{% url 'home' %}{% endif %}">{% icon "logo" %}<span>FixMyHome</span></a>
+    <a class="logo" href="{% if user.role == 'user' %}{% url 'listings:nearby_masters' %}{% elif user.role == 'master' %}{% url 'listings:master_ads' %}{% else %}{% url 'home' %}{% endif %}">{% icon "logo" %}<span>FixMy<b>Home</b></span></a>
     <nav class="main-nav" aria-label="Főmenü">
       {% if user.role == "user" %}
         <a href="{% url 'listings:nearby_masters' %}"{% if url_name == "nearby_masters" %} aria-current="page"{% endif %}>Mesterek</a>
@@ -37,11 +37,18 @@
       <span class="nav-indicator" aria-hidden="true"></span>
     </nav>
     <div class="header-cta">
-      {% if user.role == "user" %}
-        <a class="btn btn-header" href="{% url 'listings:ad_create' %}"{% if url_name == "ad_create" %} aria-current="page"{% endif %}>{% icon "plus" %}Hirdetés feladása</a>
-      {% elif user.role == "master" %}
-        <a class="icon-btn" href="{% url 'listings:master_profile' %}" title="Alapadatok" aria-label="Alapadatok"{% if url_name == "master_profile" %} aria-current="page"{% endif %}>{% icon "user" %}</a>
-      {% elif not user.is_authenticated %}
+      {% if user.is_authenticated %}
+        {% if user.role == "user" %}
+          <a class="btn btn-header" href="{% url 'listings:ad_create' %}"{% if url_name == "ad_create" %} aria-current="page"{% endif %}>+ Hirdetés feladása</a>
+        {% endif %}
+        <details class="profile">
+          <summary>{% avatar user.name %}<span class="profile-name"><b>{{ user.name }}</b><small>{{ user.get_role_display }}</small></span><span class="caret" aria-hidden="true">▾</span></summary>
+          <div class="profile-menu">
+            {% if user.role == "master" %}<a href="{% url 'listings:master_profile' %}"{% if url_name == "master_profile" %} aria-current="page"{% endif %}>{% icon "user" %}Alapadatok</a>{% endif %}
+            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Kilépés</button></form>
+          </div>
+        </details>
+      {% else %}
         {% if url_name != "register" %}<a class="btn btn-ghost" href="{% url 'register' %}">Regisztráció</a>{% endif %}
         {% if url_name != "login" %}<a class="btn btn-header" href="{% url 'login' %}">Belépés</a>{% endif %}
       {% endif %}
@@ -61,10 +68,6 @@
   <footer class="site-footer"><div class="container">© 2026 FixMyHome · Vajdaság</div></footer>
   <details class="demo-panel"><summary>DEMO</summary><div class="demo-body">
     <div class="row"><span>Téma</span><div class="seg" role="group" aria-label="Téma"><button type="button" data-theme="a" aria-pressed="true">A Építkezés</button><button type="button" data-theme="b" aria-pressed="false">B Acél</button></div></div>
-    {% if user.is_authenticated %}
-      <span class="muted small">{{ user.name }} · {{ user.get_role_display }}</span>
-      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="linklike">Kilépés</button></form>
-    {% endif %}
   </div></details>
 
   <script>

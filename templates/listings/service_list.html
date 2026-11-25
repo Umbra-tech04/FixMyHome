@@ -10,12 +10,20 @@
     <ul class="card-list">
       {% for service in services %}
         <li class="card hoverable cat-{{ service.category.name|slugify }}">
-          <div class="card-top">
-            <div><h3>{{ service.title }}</h3><span class="chip chip-trade">{% icon service.category.name %}{{ service.category }}</span></div>
-            {% if service.is_active %}<span class="badge badge-open">Közzétéve</span>{% else %}<span class="badge badge-withdrawn">Szüneteltetve</span>{% endif %}
+          <div class="card-main">
+            <span class="trade-icon" aria-hidden="true">{% icon service.category.name %}</span>
+            <div>
+              <div class="card-top">
+                <div><h3>{{ service.title }}</h3><span class="trade-label">{{ service.category }}</span></div>
+                {% if service.is_active %}<span class="badge badge-open">Közzétéve</span>{% else %}<span class="badge badge-closed">Szüneteltetve</span>{% endif %}
+              </div>
+              <p class="card-desc">{{ service.description }}</p>
+              <div class="card-facts">
+                <span class="price">{{ service.get_price_category_display }}</span>
+                <span>{% icon "pin" %} {{ service.service_area }}</span>
+              </div>
+            </div>
           </div>
-          <p class="card-sub"><b>{{ service.get_price_category_display }}</b> · {{ service.service_area }}</p>
-          <p class="muted">{{ service.description }}</p>
           <div class="card-actions">
             <a class="btn btn-secondary btn-sm" href="{% url 'listings:service_edit' service.pk %}">Szerkesztés</a>
             <form method="post" action="{% url 'listings:service_toggle' service.pk %}">

@@ -46,12 +46,22 @@
         <ul class="card-list">
           {% for profile in masters %}
             <li class="card hoverable cat-{{ profile.profession.name|slugify }}">
-              <div class="card-top">
-                <div><h3>{{ profile.user.name }}</h3><span class="chip chip-trade">{% icon profile.profession.name %}{{ profile.profession }}</span></div>
-                <span class="pill-distance">{{ profile.distance|floatformat:1 }}<small>km</small></span>
+              <div class="card-main">
+                <span class="trade-icon" aria-hidden="true">{% icon profile.profession.name %}</span>
+                <div>
+                  <div class="card-top">
+                    <div><h3>{{ profile.user.name }}</h3><span class="trade-label">{{ profile.profession }}</span></div>
+                    <span class="pill-distance">{{ profile.distance|floatformat:1 }}<small>km</small></span>
+                  </div>
+                  {% if profile.service %}<p class="card-desc">{{ profile.service.description }}</p>{% endif %}
+                  <div class="card-facts">
+                    <span>{% icon "pin" %} {{ profile.service_area }}</span>
+                    {% if profile.service %}<span class="price">{{ profile.service.get_price_category_display }}</span>{% endif %}
+                    {% if profile.is_available %}<span class="avail">Most elérhető</span>{% else %}<span class="avail avail-off">Most nem elérhető</span>{% endif %}
+                  </div>
+                  <p class="rating-none">Még nincs értékelés</p>
+                </div>
               </div>
-              <p class="card-sub">{% icon "pin" %}{{ profile.service_area }}{% if profile.service %} · <b>{{ profile.service.get_price_category_display }}</b>{% endif %}{% if profile.is_available %} · Most elérhető{% endif %} <span class="rating-none">· Még nincs értékelés</span></p>
-              {% if profile.service %}<p class="muted">{{ profile.service.description|truncatechars:90 }}</p>{% endif %}
               <div class="card-actions"><a class="btn btn-secondary btn-sm" href="{% url 'listings:ad_create' %}?kat={{ profile.profession_id }}">Ajánlatot kérek</a></div>
             </li>
           {% endfor %}

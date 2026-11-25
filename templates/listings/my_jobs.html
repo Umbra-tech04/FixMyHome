@@ -10,10 +10,21 @@
     <ul class="card-list one-col">
       {% for ad in jobs %}
         <li class="card hoverable cat-{{ ad.category.name|slugify }}">
-          <div class="card-top"><h3><a href="{% url 'listings:ad_detail' ad.pk %}">{{ ad.title }}</a></h3>{% include "listings/_ad_badge.html" %}</div>
-          <p class="card-sub">{% icon "user" %}{{ ad.owner.name }} · {% icon "pin" %}{{ ad.location_text }}</p>
-          <p>{{ ad.description|truncatewords:30 }}</p>
-          <p class="rating-none">{% icon "calendar" %}Még nincs időpont</p>
+          <div class="card-main">
+            <span class="trade-icon" aria-hidden="true">{% icon ad.category.name %}</span>
+            <div>
+              <div class="card-top">
+                <div><h3><a href="{% url 'listings:ad_detail' ad.pk %}">{{ ad.title }}</a></h3><span class="trade-label">{{ ad.category }}</span></div>
+                {% include "listings/_ad_badge.html" %}
+              </div>
+              <p class="card-desc">{{ ad.description }}</p>
+              <div class="card-facts">
+                <span>{% icon "user" %} {{ ad.owner.name }}</span>
+                <span>{% icon "pin" %} {{ ad.location_text }}</span>
+                <span class="muted">{% icon "calendar" %} Még nincs időpont</span>
+              </div>
+            </div>
+          </div>
         </li>
       {% endfor %}
     </ul>
