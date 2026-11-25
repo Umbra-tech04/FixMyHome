@@ -1,8 +1,8 @@
 /* FixMyHome statikus prototípus – fejléc, szerepkör- és témaváltó, kamu adatok, oldal-interakciók.
    Minden állapot localStorage-ben van, így a kattintások túlélik az oldalváltást. "Demóadatok visszaállítása" a jobb alsó DEMO panelben. */
 
-const THEMES = { a: 'themes/a-hivis.css', b: 'themes/b-acel.css' };
-const THEME_NAMES = { a: 'Építkezés', b: 'Acél' };
+const THEMES = { a: 'themes/a-hivis.css', b: 'themes/b-acel.css', c: 'themes/c-brutal.css' };
+const THEME_NAMES = { a: 'Építkezés', b: 'Acél', c: 'Brutál' };
 const LS = { theme: 'fmh-theme', role: 'fmh-role', db: 'fmh-db', jobs: 'fmh-munkak-szuro' };
 
 // Téma beállítása még renderelés előtt (a script a <head>-ben fut), hogy ne villanjon.
