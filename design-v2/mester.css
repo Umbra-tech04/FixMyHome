@@ -1,8 +1,7 @@
 /* FixMyHome V2 – mester-oldalak (hirdetés-tábla + kanban). Az oldalsáv, a .bar-btn és a szakmaszínek a v2.css-ben/v2.js-ben vannak. */
 :root {
-  --concrete: #E6E6E3; --ink: #0B0B0B; --lime: #D4FF3A; --line: #0B0B0B; --muted: #55554F;
-  --display: "Space Grotesk", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
-  --ease: cubic-bezier(.2, .8, .2, 1);
+  /* Csak saját nevek: az --ink, --lime, --line, --mono, --ease a v2.css-ből jön (ott más a --line!). */
+  --concrete: #E6E6E3; --muted: #55554F; --display: "Space Grotesk", system-ui, sans-serif;
 }
 
 /* --- Közös elemek az oldalon --- */
@@ -64,6 +63,51 @@
 .col.done .job { background: #f3f3f0; }
 .col.done .job .bar-btn { display: none; }
 .col-empty { font: 600 .85rem var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 24px 4px; }
+
+/* --- 3) Szolgáltatásaim: lista + sticky űrlap --- */
+.svc-layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 48px; align-items: start; }
+.svc-count { margin: 0 0 12px; }
+.svc-list { list-style: none; margin: 0; padding: 0; border-top: 3px solid var(--ink); }
+.svc-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 22px; align-items: center; padding: 22px 0; border-bottom: 3px solid var(--ink); animation: row-in .5s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms); overflow: hidden; }
+.svc-row::before { content: ""; align-self: stretch; background: var(--cat); }
+.svc-row.paused { color: var(--muted); }
+.svc-row.paused::before { opacity: .35; }
+.svc-row.editing { background: color-mix(in srgb, var(--lime) 35%, transparent); }
+.svc-row h3 { font: 700 1.55rem/1.1 var(--display); margin: 4px 0 6px; }
+.svc-meta { font: 500 .85rem var(--mono); letter-spacing: .04em; text-transform: uppercase; margin: 0; }
+.svc-meta b { color: var(--ink); }
+.svc-side { display: grid; justify-items: end; gap: 10px; }
+.switch { display: inline-flex; align-items: center; gap: 12px; background: none; border: 3px solid var(--ink); padding: 8px 14px 8px 8px; cursor: pointer; font: 700 .78rem var(--mono); letter-spacing: .12em; color: var(--ink); }
+.switch .knob { width: 44px; height: 24px; background: #C8C8C4; position: relative; transition: background .2s; }
+.switch .knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: var(--ink); transition: transform .25s var(--ease); }
+.switch[aria-checked="true"] { background: var(--ink); color: var(--lime); }
+.switch[aria-checked="true"] .knob { background: var(--lime); }
+.switch[aria-checked="true"] .knob::after { transform: translateX(20px); }
+.switch:focus-visible, .svc-del:focus-visible, .tiles input:focus-visible + span, .prices input:focus-visible + b { outline: 4px solid var(--lime); outline-offset: 2px; }
+.svc-actions { display: flex; align-items: center; gap: 18px; }
+.svc-del { background: none; border: 0; padding: 4px 0; font: 700 .8rem var(--mono); letter-spacing: .14em; color: var(--error, #C0261B); cursor: pointer; text-decoration: underline; text-underline-offset: 6px; }
+.svc-confirm { display: flex; align-items: center; gap: 14px; font: 700 .8rem var(--mono); letter-spacing: .12em; animation: row-in .25s var(--ease) both; }
+.svc-confirm button { font: 700 .8rem var(--mono); letter-spacing: .12em; border: 3px solid var(--ink); background: none; padding: 8px 14px; cursor: pointer; }
+.svc-confirm .yes { background: var(--error, #C0261B); border-color: var(--error, #C0261B); color: #fff; }
+.svc-panel { position: sticky; top: 24px; background: var(--white, #fff); border: 3px solid var(--ink); padding: 28px; }
+.svc-panel h2 { font: 700 1rem var(--mono); letter-spacing: .14em; margin: 0 0 22px; padding-bottom: 14px; border-bottom: 3px solid var(--ink); }
+.svc-panel form { display: grid; gap: 22px; }
+.svc-panel fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.svc-panel legend { padding: 0; margin-bottom: 8px; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tiles label, .prices label { position: relative; cursor: pointer; }
+.tiles input, .prices input { position: absolute; opacity: 0; }
+.tiles span { display: grid; place-items: center; min-height: 56px; padding: 6px; text-align: center; font: 700 .68rem var(--mono); letter-spacing: .06em; text-transform: uppercase; color: #fff; background: var(--cat); border: 3px solid var(--cat); transition: transform .15s var(--ease); }
+.tiles input:checked + span { border-color: var(--ink); box-shadow: inset 0 0 0 3px var(--lime); transform: translateY(-2px); }
+.prices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 3px solid var(--ink); }
+.prices label + label { border-left: 3px solid var(--ink); }
+.prices b { display: block; padding: 14px 6px 2px; text-align: center; font: 700 .85rem var(--mono); letter-spacing: .1em; }
+.prices small { display: block; padding: 0 6px 12px; text-align: center; font: .68rem var(--mono); color: var(--muted); }
+.prices label:has(input:checked) { background: var(--ink); }
+.prices label:has(input:checked) b { color: var(--lime); }
+.prices label:has(input:checked) small { color: #C8C8C4; }
+.svc-cancel { justify-self: start; }
+@media (max-width: 1100px) { .svc-layout { grid-template-columns: 1fr; } .svc-panel { position: static; } }
 
 @keyframes row-in { from { opacity: 0; transform: translateY(18px); } }
 @media (max-width: 900px) {

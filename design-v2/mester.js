@@ -117,8 +117,106 @@
     });
   }
 
+  /* ---------- 3) Szolgáltatásaim ---------- */
+  const TRADES = ['Villanyszerelő', 'Vízszerelő', 'Festő', 'Asztalos', 'Burkoló', 'Lakatos'];
+  const PRICES = { low: 'Olcsó · 2000 din/órától', medium: 'Közepes · 3000 din/órától', high: 'Drága · 5000 din/órától' };
+  let services = [
+    { id: 1, name: 'Háztartási villanyszerelés', trade: 'Villanyszerelő', desc: 'Konnektorok, kapcsolók, lámpák szerelése, hibakeresés.', price: 'medium', area: 'Szabadka és 10 km', active: true },
+    { id: 2, name: 'Biztosítéktábla csere', trade: 'Villanyszerelő', desc: 'Régi olvadóbiztosítékos tábla cseréje kismegszakítósra.', price: 'high', area: 'Szabadka, Palics', active: true },
+    { id: 3, name: 'Okosotthon-kapcsolók telepítése', trade: 'Villanyszerelő', desc: 'Wi-Fi-s kapcsolók és redőnyvezérlők beszerelése, beállítása.', price: 'high', area: 'Szabadka', active: false },
+  ];
+  let editing = null;
+  const toast = msg => window.V2?.toast?.(msg);
+
+  const svcRow = (s, i) => `
+    <li class="svc-row cat-${slug(s.trade)}${s.active ? '' : ' paused'}${editing === s.id ? ' editing' : ''}" style="--i:${i}" data-id="${s.id}">
+      <div><span class="row-trade">${esc(s.trade)}</span><h3>${esc(s.name)}</h3><p class="svc-meta"><b>${esc(PRICES[s.price])}</b> · ${esc(s.area)}</p></div>
+      <div class="svc-side">
+        <button type="button" class="switch" role="switch" aria-checked="${s.active}" data-toggle><span class="knob" aria-hidden="true"></span>${s.active ? 'KÖZZÉTÉVE' : 'SZÜNETEL'}</button>
+        <div class="svc-actions"><button type="button" class="link-arrow" data-edit>SZERKESZTÉS</button><button type="button" class="svc-del" data-del>TÖRLÉS</button></div>
+      </div>
+    </li>`;
+
+  function renderServices() {
+    $('#svc-list').innerHTML = services.length ? services.map(svcRow).join('') : '<li class="empty">MÉG NINCS SZOLGÁLTATÁSOD – A JOBB OLDALI ŰRLAPPAL HIRDESS EGYET.</li>';
+    const active = services.filter(s => s.active).length;
+    $('#svc-count').textContent = `${services.length} SZOLGÁLTATÁS · ${active} KÖZZÉTÉVE`;
+  }
+
+  function fillForm(s) {
+    const f = $('#svc-form');
+    editing = s ? s.id : null;
+    f.reset();
+    clearErrors(f);
+    if (s) { f.name.value = s.name; f.desc.value = s.desc; f.area.value = s.area; f.trade.value = s.trade; f.price.value = s.price; }
+    $('#svc-form-title').textContent = s ? 'SZOLGÁLTATÁS SZERKESZTÉSE' : 'ÚJ SZOLGÁLTATÁS';
+    $('#svc-submit').textContent = s ? 'MENTÉS' : 'KÖZZÉTÉTEL';
+    $('#svc-cancel').hidden = !s;
+    renderServices();
+  }
+
+  const clearErrors = f => { $$('.err', f).forEach(e => e.remove()); $$('.has-err', f).forEach(e => e.classList.remove('has-err')); };
+  function validate(f) {
+    clearErrors(f);
+    const checks = [
+      [f.name, !f.name.value.trim(), f.name.dataset.msg],
+      [$('#trade-tiles'), !f.trade.value, 'Válassz szakmát.'],
+      [f.desc, !f.desc.value.trim(), f.desc.dataset.msg],
+      [$('.prices', f), !f.price.value, 'Válassz árkategóriát.'],
+      [f.area, !f.area.value.trim(), f.area.dataset.msg],
+    ];
+    let first = null;
+    checks.forEach(([el, bad, msg]) => {
+      if (!bad) return;
+      const field = el.closest('.field');
+      field.classList.add('has-err');
+      field.insertAdjacentHTML('beforeend', `<p class="err" role="alert">${esc(msg)}</p>`);
+      first ??= field.querySelector('input, textarea');
+    });
+    first?.focus();
+    return !first;
+  }
+
+  function initServices() {
+    const f = $('#svc-form'), list = $('#svc-list');
+    $('#trade-tiles').innerHTML = TRADES.map(t => `<label class="cat-${slug(t)}"><input type="radio" name="trade" value="${t}"><span>${t}</span></label>`).join('');
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!validate(f)) return;
+      const data = { name: f.name.value.trim(), trade: f.trade.value, desc: f.desc.value.trim(), price: f.price.value, area: f.area.value.trim() };
+      if (editing) Object.assign(services.find(s => s.id === editing), data);
+      else services.unshift({ id: Date.now(), active: true, ...data });
+      toast(editing ? 'Változások mentve.' : 'Szolgáltatás közzétéve.');
+      fillForm(null);
+    });
+    $('#svc-cancel').addEventListener('click', () => fillForm(null));
+    list.addEventListener('click', e => {
+      const row = e.target.closest('.svc-row'); if (!row) return;
+      const s = services.find(x => x.id === +row.dataset.id);
+      if (e.target.closest('[data-toggle]')) {
+        s.active = !s.active; renderServices(); toast(s.active ? 'Újra közzétéve.' : 'Szüneteltetve.');
+        $(`[data-id="${s.id}"] [data-toggle]`).focus();
+      } else if (e.target.closest('[data-edit]')) {
+        fillForm(s); $('#s-name').focus();
+      } else if (e.target.closest('[data-del]')) {
+        const actions = $('.svc-actions', row);
+        actions.outerHTML = '<div class="svc-confirm" role="group" aria-label="Törlés megerősítése">BIZTOS? <button type="button" class="yes" data-yes>IGEN</button><button type="button" data-no>MÉGSE</button></div>';
+        $('[data-no]', row).focus();
+      } else if (e.target.closest('[data-no]')) {
+        renderServices();
+      } else if (e.target.closest('[data-yes]')) {
+        const h = row.offsetHeight;
+        const anim = row.animate([{ height: `${h}px`, opacity: 1 }, { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px', borderBottomWidth: '0px' }],
+          { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 420, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+        anim.onfinish = () => { services = services.filter(x => x !== s); if (editing === s.id) fillForm(null); else renderServices(); toast('Szolgáltatás törölve.'); };
+      }
+    });
+    renderServices();
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     if ($('#board')) initBoard();
     if ($('.kanban')) initKanban();
+    if ($('#svc-list')) initServices();
   });
 })();
