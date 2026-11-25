@@ -82,10 +82,12 @@
       anchor.setAttribute('aria-activedescendant', active >= 0 ? `${ul.id}-${active}` : '');
       ul.querySelector('.active')?.scrollIntoView({ block: 'nearest' });
     };
-    const open = () => { list = items(isInput ? anchor.value : ''); active = Math.max(0, list.findIndex(it => it.value === selected())); if (isInput && anchor.value && !list.some(it => it.value === anchor.value)) active = 0; ul.hidden = false; anchor.setAttribute('aria-expanded', 'true'); paint(); };
-    const close = () => { ul.hidden = true; anchor.setAttribute('aria-expanded', 'false'); };
-    const pick = i => { const it = list[i]; if (!it) return; close(); onPick(it); };
+    const open = (all = false) => { list = items(isInput && !all ? anchor.value : ''); active = Math.max(0, list.findIndex(it => it.value === selected())); if (isInput && anchor.value && !list.some(it => it.value === anchor.value)) active = 0; ul.hidden = false; anchor.setAttribute('aria-expanded', 'true'); paint(); };
+    const close = () => { ul.hidden = true; anchor.setAttribute('aria-expanded', 'false'); box.querySelector('.dd-toggle')?.setAttribute('aria-expanded', 'false'); };
+    const pick = i => { const it = list[i]; if (!it) return; close(); onPick(it); if (isInput) anchor.blur(); /* választás után ne villogjon a kurzor */ };
     anchor.addEventListener(isInput ? 'focus' : 'click', () => (ul.hidden || isInput ? open() : close()));
+    const toggle = box.querySelector('.dd-toggle');
+    toggle?.addEventListener('click', () => { if (ul.hidden) { open(true); toggle.setAttribute('aria-expanded', 'true'); } else { close(); } });
     if (isInput) anchor.addEventListener('input', () => { open(); active = list.length ? 0 : -1; paint(); });
     anchor.addEventListener('keydown', e => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (ul.hidden) return open(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length; paint(); }
@@ -258,7 +260,7 @@
       const ch = ad.chosen != null ? ad.applicants[ad.chosen] : null;
       root.innerHTML = `
         <p class="kicker">Hirdetéseim · ${esc(ad.cat)}</p>
-        <h1 class="huge">${esc(ad.title)}</h1>
+        <h1 class="huge">${esc(ad.title.replace(/[.\s]+$/, ''))}</h1>
         <div class="timeline ${s === 'withdrawn' ? 'withdrawn' : ''}" aria-label="Állapot">
           ${steps.map(([b, sm], i) => `<div class="step ${s === 'withdrawn' ? '' : i < idx || s === 'closed' ? 'done' : i === idx ? 'current' : ''}"><b>${b}</b><small>${s === 'withdrawn' && i === 0 ? 'Visszavonva' : sm}</small></div>`).join('')}
         </div>
