@@ -352,7 +352,7 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
   .logo { font-size: 1.25rem; }
   .header-cta { margin-left: auto; }
   .header-cta { gap: 8px; }
-  .btn-header { min-height: 40px; padding: 0 10px; font-size: .78rem; letter-spacing: 0; }
+  .site-header .btn-header { min-height: 40px; padding: 0 10px; font-size: .78rem; letter-spacing: 0; }
   .profile .avatar { width: 32px; height: 32px; font-size: .85rem; }
   .btn-header .icon { display: none; }
   .logo svg { width: 26px; height: 26px; }
@@ -374,6 +374,8 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
   .card { padding: 18px; }
   .trade-icon { width: 48px; height: 48px; }
   .card-main { gap: 12px; }
+  .card-facts { grid-template-columns: minmax(0, 1fr); }
+  .card-top { gap: 4px 10px; }
   .card-actions .btn, .modal-actions .btn { flex: 1; }
   .form-actions { flex-direction: column; align-items: stretch; }
   .form-actions .btn, .empty-state .btn, .auth .btn { width: 100%; }
@@ -390,6 +392,9 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
 
   .map-wrap { height: 62vh; }
   .sheet { left: 8px; right: 8px; bottom: 8px; }
+  .sheet .card-desc, .sheet .rating-none { display: none; }
+  .sheet .card { padding-right: 44px; }
+  .sheet .card-actions { padding-top: 12px; }
   .stepper li { font-size: .78rem; }
   dialog.modal { width: calc(100% - 24px); }
   #toasts { width: calc(100% - 32px); bottom: 64px; }

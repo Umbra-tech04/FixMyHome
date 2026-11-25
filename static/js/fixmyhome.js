@@ -214,6 +214,8 @@
     const links = $$('.main-nav a'), home = links.find(a => a.hasAttribute('aria-current'));
     const move = a => { ind.style.opacity = a ? 1 : 0; if (a) { ind.style.width = `${a.offsetWidth}px`; ind.style.transform = `translateX(${a.offsetLeft}px)`; } };
     move(home);
+    // Mobilon a menü vízszintesen görgethető: az aktív pont legyen látható.
+    if (home) { const nav = home.parentElement; nav.scrollLeft = home.offsetLeft - (nav.clientWidth - home.offsetWidth) / 2; }
     links.forEach(a => a.addEventListener('mouseenter', () => move(a)));
     $('.main-nav').addEventListener('mouseleave', () => move(home));
     document.fonts?.ready.then(() => move(home));
