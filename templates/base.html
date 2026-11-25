@@ -9,7 +9,18 @@
   <header>
     <a href="{% url 'home' %}"><strong>MesterKereső</strong></a>
     {% block nav %}
-      <nav><a href="{% url 'register' %}">Regisztráció</a></nav>
+      <nav>
+        {% if user.is_authenticated %}
+          <span>{{ user.name }} ({{ user.get_role_display }})</span>
+          <form method="post" action="{% url 'logout' %}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit">Kilépés</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">Belépés</a>
+          <a href="{% url 'register' %}">Regisztráció</a>
+        {% endif %}
+      </nav>
     {% endblock %}
   </header>
   <main>
