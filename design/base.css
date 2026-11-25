@@ -91,7 +91,8 @@ main.container > :nth-child(2) { animation-delay: .06s; } main.container > :nth-
 .card-list.one-col { grid-template-columns: 1fr; }
 .card-list > * { animation: rise .5s var(--ease) both; animation-delay: calc(var(--i, 0) * 70ms); }
 .card h3 { font-size: 1.3rem; margin: 0 0 6px; }
-.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.card-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px 16px; }
+.card-top > div { flex: 1 1 160px; min-width: 0; }
 .card-sub { color: var(--muted); display: flex; gap: 8px; align-items: center; margin: 0; }
 .card-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
 .card p { margin: 10px 0 0; }
@@ -266,4 +267,89 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* ---------- Szakma-színkód (a felület kerete marad 3 színű; a szín csak a szakma jelölője) ----------
+   .cat-<slug> a kártyán: --cat változót állít; .trade-icon = nagy ikoncsempe, .trade-label = színes szakma-címke. */
+.cat-villanyszerelo { --cat: #E0A100; --cat-ink: #1A1A1A; }
+.cat-vizszerelo     { --cat: #2F6DB0; --cat-ink: #fff; }
+.cat-festo          { --cat: #94397F; --cat-ink: #fff; }
+.cat-asztalos       { --cat: #8A5A2B; --cat-ink: #fff; }
+.cat-burkolo        { --cat: #B8532C; --cat-ink: #fff; }
+.cat-lakatos        { --cat: #2C7A78; --cat-ink: #fff; }
+.card[class*="cat-"] { border-left: 10px solid var(--cat); }
+.card-main { display: flex; gap: 18px; align-items: flex-start; }
+.card-main > div { flex: 1; min-width: 0; }
+.trade-icon { width: 60px; height: 60px; flex: none; display: grid; place-items: center; background: var(--cat, var(--ink)); color: var(--cat-ink, #fff); border: var(--b) solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transition: transform .3s var(--ease); }
+.trade-icon .icon { width: 30px; height: 30px; stroke-width: 2.2; }
+.card:hover .trade-icon { transform: rotate(-6deg) translateY(-3px); }
+.trade-label { display: inline-block; margin-top: 2px; padding: 2px 8px; border: var(--b) solid var(--cat, var(--ink)); background: color-mix(in srgb, var(--cat, var(--ink)) 14%, var(--surface)); color: color-mix(in srgb, var(--cat, var(--ink)) 72%, #000); font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.card-desc { color: var(--muted); margin: 10px 0 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.card-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-top: 12px; font-size: .95rem; }
+.card-facts > span { display: inline-flex; align-items: center; gap: 5px; }
+.price { font-weight: 800; }
+.avail { color: #1E7A3A; font-weight: 700; }
+.avail::before { content: ""; width: 10px; height: 10px; background: currentColor; }
+.avail-off { color: var(--muted); }
+.card .rating-none { margin-top: 8px; }
+
+/* Színes állapotcímkék (keretes, szögletes) – felülírják a monokróm alapot */
+.badge-open, .badge-accepted { background: #E4F4E8; color: #1E6B34; border-color: #1E6B34; --dot: #2E9E4F; }
+.badge-progress { background: #FFF2D2; color: #7A5000; border-color: #7A5000; --dot: #E0A100; }
+.badge-closed, .badge-pending { background: #ECEDEF; color: #474C55; border-color: #474C55; --dot: #474C55; }
+.badge-withdrawn, .badge-rejected { background: #FBE5E1; color: #A12A1E; border-color: #A12A1E; --dot: #C0392B; }
+.badge-withdrawn::before, .badge-rejected::before { box-shadow: none; }
+
+/* ---------- Mobil (≤768px): a menü vízszintesen görgethető második sor, 1 oszlop, teljes szélességű gombok ---------- */
+@media (max-width: 768px) {
+  body { font-size: 17px; }
+  .container { width: calc(100% - 32px); }
+  main.container { padding: 24px 0 88px; }
+
+  .site-header .container { flex-wrap: wrap; height: auto; gap: 0 12px; padding-top: 10px; }
+  .logo { font-size: 1.25rem; }
+  .header-cta { margin-left: auto; }
+  .btn-header { min-height: 42px; padding: 0 12px; font-size: .85rem; letter-spacing: 0; }
+  .btn-header .icon { display: none; }
+  .logo svg { width: 26px; height: 26px; }
+  .main-nav { order: 3; width: 100%; height: 48px; overflow-x: auto; scrollbar-width: none; gap: 0; }
+  .main-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+  .tabs { scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
+  .main-nav a { padding: 0 12px; font-size: 1rem; }
+  .icon-btn { width: 42px; height: 42px; }
+
+  /* body-szintű szelektor, hogy a téma (pl. B 3,4rem) nagy címét is felülírja */
+  body .page-title { font-size: 2rem; }
+  .page-head { flex-direction: column; align-items: stretch; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; }
+  .page-head > .btn { width: 100%; }
+
+  .card-list, .grid-2, .form-row, .role-pick { grid-template-columns: 1fr; }
+  .card { padding: 18px; }
+  .card-top { flex-wrap: wrap; }
+  .trade-icon { width: 48px; height: 48px; }
+  .card-main { gap: 12px; }
+  .card-actions .btn, .modal-actions .btn { flex: 1; }
+  .form-actions { flex-direction: column; align-items: stretch; }
+  .form-actions .btn, .empty-state .btn, .auth .btn { width: 100%; }
+  .auth > .card { padding: 22px; }
+
+  /* Mesterek-sor tördelve: hely-gomb, kereső, körzet és nézet külön sorban, teljes szélességben */
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .toolbar > .btn { width: 100%; }
+  .toolbar form.row { flex-wrap: nowrap; }
+  .toolbar form .form-field { flex: 1; min-width: 0; }
+  .toolbar input { width: 100% !important; }
+  .toolbar .divider, .toolbar .spacer { display: none; }
+  .toolbar [role=group] .chip { flex: 1; justify-content: center; }
+
+  .map-wrap { height: 62vh; }
+  .sheet { left: 8px; right: 8px; bottom: 8px; }
+  .stepper li { font-size: .78rem; }
+  dialog.modal { width: calc(100% - 24px); }
+  #toasts { width: calc(100% - 32px); bottom: 64px; }
+  .toast { min-width: 0; width: 100%; }
+  /* DEMO panel: kisebb, a lap alján lévő tartalmat a main alsó paddingje szabadon hagyja */
+  .demo-panel { right: 8px; bottom: 8px; }
+  .demo-panel .demo-body { max-width: calc(100vw - 32px); }
+  .demo-panel .seg button { padding: 5px 7px; }
 }

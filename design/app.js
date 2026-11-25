@@ -62,7 +62,7 @@ const DEFAULT_DB = () => ({
     { id: 10, name: 'Fekete Lajos', trade: 'Burkoló', town: 'Zenta', lat: 45.9290, lng: 20.0850, price: '3000 din/m²-től', verified: false },
   ],
   // A mester-nézet "saját" adatai
-  me: { name: 'Kovács Péter', trades: ['Villanyszerelő'], town: 'Szabadka', available: true },
+  me: { name: 'Kovács Péter', trades: ['Villanyszerelő', 'Vízszerelő'], town: 'Szabadka', available: true },
   ads: [
     { id: 101, title: 'Kiégett a konyhai biztosíték, nincs áram a konnektorokban', cat: 'Villanyszerelő', town: 'Szabadka', lat: 46.0985, lng: 19.6702, created: hoursAgo(2), status: 'open', client: 'Bálint Erika', desc: 'Tegnap este óta a konyhában egyik konnektor sem működik, a biztosíték mindig lecsap. Panellakás, 3. emelet.', images: 2 },
     { id: 102, title: 'Csillár felszerelése nappaliba', cat: 'Villanyszerelő', town: 'Palics', lat: 46.1010, lng: 19.7600, created: hoursAgo(26), status: 'open', client: 'Dudás Márk', desc: 'Megvan a lámpa, csak fel kellene szerelni. 2,8 m belmagasság.', images: 1 },
@@ -123,7 +123,7 @@ function ago(t) {
 const STATUS = {
   open: ['Nyitott', 'badge-open'], in_progress: ['Folyamatban', 'badge-progress'], closed: ['Lezárva', 'badge-closed'], withdrawn: ['Visszavonva', 'badge-withdrawn'],
   pending: ['Függőben', 'badge-pending'], accepted: ['Elfogadva', 'badge-accepted'], rejected: ['Elutasítva', 'badge-rejected'], app_withdrawn: ['Visszavonva', 'badge-withdrawn'],
-  published: ['Közzétéve', 'badge-open'], paused: ['Szüneteltetve', 'badge-withdrawn'],
+  published: ['Közzétéve', 'badge-open'], paused: ['Szüneteltetve', 'badge-closed'],
 };
 const badge = s => `<span class="badge ${STATUS[s][1]}">${STATUS[s][0]}</span>`;
 const stagger = el => $$(':scope > *', el).forEach((c, i) => c.style.setProperty('--i', i));
@@ -231,10 +231,21 @@ function renderHeader() {
 
 /* ---------- Kártyák ---------- */
 const trade = t => `<span class="chip chip-trade">${icon(t)}${esc(t)}</span>`;
+// Szakma-színkód: a Django slugify-jával azonos slug (ékezet nélkül, kisbetű).
+const slug = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+const cat = t => `cat-${slug(t)}`;
+const tIcon = t => `<span class="trade-icon" aria-hidden="true">${icon(t)}</span>`;
+const tLabel = t => `<span class="trade-label">${esc(t)}</span>`;
+const DESC = { Villanyszerelő: 'Lakossági villanyszerelés, hibaelhárítás', Vízszerelő: 'Csőtörés, csaptelep, fürdőszoba-szerelés', Festő: 'Szobafestés, mázolás, tapétázás', Asztalos: 'Bútorjavítás, beépített szekrény, ajtók', Burkoló: 'Csempézés, járólap, fürdőszoba-felújítás', Lakatos: 'Zárcsere, kapu, korlát, fémszerkezet' };
 function mesterCard(m, d, tag = 'li') {
-  return `<${tag} class="card hoverable" data-id="${m.id}">
-    <div class="card-top"><div><h3>${esc(m.name)}</h3>${trade(m.trade)}</div>${pill(d)}</div>
-    <p class="card-sub">${icon('pin')}${esc(m.town)} <span class="rating-none">· Még nincs értékelés</span></p>
+  const avail = m.available ?? m.id % 3 !== 0;
+  return `<${tag} class="card hoverable ${cat(m.trade)}" data-id="${m.id}">
+    <div class="card-main">${tIcon(m.trade)}<div>
+      <div class="card-top"><div><h3>${esc(m.name)}</h3>${tLabel(m.trade)}</div>${pill(d)}</div>
+      <p class="card-desc">${esc(m.desc || DESC[m.trade])}</p>
+      <div class="card-facts"><span>${icon('pin')}${esc(m.town)}</span><span class="price">${esc(m.price)}</span><span class="${avail ? 'avail' : 'avail avail-off'}">${avail ? 'Most elérhető' : 'Most nem elérhető'}</span></div>
+      <p class="rating-none">Még nincs értékelés</p>
+    </div></div>
     <div class="card-actions"><a class="btn btn-secondary btn-sm" href="hirdetes-uj.html?kat=${encodeURIComponent(m.trade)}">Ajánlatot kérek</a></div>
   </${tag}>`;
 }
@@ -392,8 +403,10 @@ const PAGES = {
       const action = s === 'in_progress' ? '<button class="btn btn-primary" data-close>Lezárás</button>'
         : s === 'open' ? '<button class="btn btn-secondary" data-withdraw>Visszavonás</button>' : '';
       root.innerHTML = head(a.title, lead, action, 'Hirdetéseim') + `
-        <div class="card">
-          <div class="card-top">${badge(s)}<span class="card-sub">${trade(a.cat)} · ${icon('pin')}${esc(a.town)} · ${ago(a.created)}</span></div>
+        <div class="card ${cat(a.cat)}">
+          <div class="card-main">${tIcon(a.cat)}<div>
+            <div class="card-top"><div>${tLabel(a.cat)}<p class="card-sub" style="margin-top:8px">${icon('pin')}${esc(a.town)} · ${ago(a.created)}</p></div>${badge(s)}</div>
+          </div></div>
           <p>${esc(a.desc)}</p>
           <div class="gallery">${imgs}</div>
           <ol class="stepper ${s === 'withdrawn' ? 'is-withdrawn' : ''}" aria-label="Hirdetés állapota">
@@ -402,10 +415,12 @@ const PAGES = {
         </div>
         <h2 class="section-title">Jelentkezők (${a.applicants.length})</h2>
         ${a.applicants.length ? `<ul class="card-list" id="applicants">${a.applicants.map((p, i) => `
-          <li class="card">
-            <div class="card-top"><div><h3>${esc(p.name)}</h3>${trade(p.trade)}</div>${badge(p.status)}</div>
-            <p>„${esc(p.msg)}”</p>
-            <p class="rating-none">Még nincs értékelés</p>
+          <li class="card ${cat(p.trade)}">
+            <div class="card-main">${tIcon(p.trade)}<div>
+              <div class="card-top"><div><h3>${esc(p.name)}</h3>${tLabel(p.trade)}</div>${badge(p.status)}</div>
+              <p>„${esc(p.msg)}”</p>
+              <p class="rating-none">Még nincs értékelés</p>
+            </div></div>
             ${s === 'open' && p.status === 'pending' ? `<div class="card-actions"><button class="btn btn-secondary" data-pick="${i}">Kiválasztom</button></div>` : ''}
           </li>`).join('')}</ul>` : empty('inbox', 'Még nincs jelentkező', 'Amint egy környékbeli mester jelentkezik, itt látod.')}`;
       $$('#applicants').forEach(stagger);
@@ -437,10 +452,12 @@ const PAGES = {
     const list = db.ads.filter(a => a.status === 'open' && me.trades.includes(a.cat)).map(a => ({ a, d: km(from, a) })).filter(x => x.d <= 20).sort((x, y) => x.d - y.d);
     const el = $('#ad-list');
     el.innerHTML = list.length ? list.map(({ a, d }) => `
-      <li class="card hoverable">
-        <div class="card-top">${db.applications[a.id]?.status === 'pending' ? '<span class="badge badge-pending">Jelentkeztél</span>' : badge(a.status)}${pill(d)}</div>
-        <h3 style="margin-top:12px">${esc(a.title)}</h3>
-        <p class="card-sub">${icon('pin')}${esc(a.town)} · ${ago(a.created)}</p>
+      <li class="card hoverable ${cat(a.cat)}">
+        <div class="card-main">${tIcon(a.cat)}<div>
+          <div class="card-top"><div><h3>${esc(a.title)}</h3>${tLabel(a.cat)}</div>${pill(d)}</div>
+          <p class="card-desc">${esc(a.desc)}</p>
+          <div class="card-facts">${db.applications[a.id]?.status === 'pending' ? '<span class="badge badge-pending">Jelentkeztél</span>' : badge(a.status)}<span>${icon('pin')}${esc(a.town)}</span><span>${icon('clock')}${ago(a.created)}</span></div>
+        </div></div>
         <div class="card-actions"><a class="btn btn-secondary btn-sm" href="hirdetes-reszlet.html?id=${a.id}">Megnézem</a></div>
       </li>`).join('')
       : empty('inbox', 'Nincs nyitott hirdetés a környéken', 'Most senki nem keres a szakmádban 20 km-en belül. Bővítsd a szakmáidat az alapadatoknál!', '<a class="btn btn-secondary" href="alapadatok.html">Alapadatok</a>');
@@ -459,7 +476,7 @@ const PAGES = {
         : applied ? 'Jelentkeztél. Ha a hirdető kiválaszt, megjelenik a Munkáim között.'
         : 'Ha vállalod, jelentkezz egy rövid üzenettel a hirdetőnek.';
       root.innerHTML = `<a href="hirdetesek.html" class="btn btn-ghost">← Hirdetések</a>` + head(a.title, lead, action, a.cat) + `
-        <div class="card">
+        <div class="card ${cat(a.cat)}">
           <div class="card-top"><div>${applied ? '<span class="badge badge-pending">Jelentkeztél</span>' : badge(a.status)}
             <p class="card-sub" style="margin-top:12px">${icon('user')}${esc(a.client)} · ${icon('pin')}${esc(a.town)} · ${ago(a.created)}</p></div>${pill(km(TOWNS[db.me.town], a))}</div>
           <p>${esc(a.desc)}</p>
@@ -497,10 +514,11 @@ const PAGES = {
     const draw = () => {
       const list = db.jobs.filter(j => f === 'mind' || j.status === f), el = $('#job-list');
       el.innerHTML = list.length ? list.map(j => `
-        <li class="card hoverable">
-          <div class="card-top"><h3>${esc(j.work)}</h3>${badge(j.status)}</div>
-          <p class="card-sub">${icon('user')}${esc(j.client)} · ${icon('pin')}${esc(j.place)}</p>
-          <p class="rating-none">${icon('calendar')} Még nincs időpont</p>
+        <li class="card hoverable ${cat(j.trade || db.me.trades[0])}">
+          <div class="card-main">${tIcon(j.trade || db.me.trades[0])}<div>
+            <div class="card-top"><div><h3>${esc(j.work)}</h3>${tLabel(j.trade || db.me.trades[0])}</div>${badge(j.status)}</div>
+            <div class="card-facts"><span>${icon('user')}${esc(j.client)}</span><span>${icon('pin')}${esc(j.place)}</span><span class="muted">${icon('calendar')}Még nincs időpont</span></div>
+          </div></div>
         </li>`).join('')
         : empty('inbox', 'Nincs ilyen munkád', f === 'closed' ? 'Még egy munkát sem zártál le.' : 'Jelentkezz a környékbeli hirdetésekre, és itt látod az elvállalt munkákat.', '<a class="btn btn-secondary" href="hirdetesek.html">Hirdetések</a>');
       stagger(el);
@@ -512,9 +530,12 @@ const PAGES = {
     const el = $('#service-list');
     const draw = () => {
       el.innerHTML = db.services.length ? db.services.map(s => `
-        <li class="card hoverable" data-id="${s.id}">
-          <div class="card-top"><div><h3>${esc(s.name)}</h3>${trade(s.trade)}</div>${badge(s.status)}</div>
-          <p class="card-sub" style="margin-top:12px"><b>${esc(s.price)}</b> · ${esc(s.area)}</p>
+        <li class="card hoverable ${cat(s.trade)}" data-id="${s.id}">
+          <div class="card-main">${tIcon(s.trade)}<div>
+            <div class="card-top"><div><h3>${esc(s.name)}</h3>${tLabel(s.trade)}</div>${badge(s.status)}</div>
+            <p class="card-desc">${esc(s.desc)}</p>
+            <div class="card-facts"><span class="price">${esc(s.price)}</span><span>${icon('pin')}${esc(s.area)}</span></div>
+          </div></div>
           <div class="card-actions">
             <a class="btn btn-secondary btn-sm" href="szolgaltatas-uj.html?id=${s.id}">Szerkesztés</a>
             <button class="btn btn-secondary btn-sm" data-toggle>${s.status === 'published' ? 'Szüneteltetés' : 'Közzététel'}</button>
