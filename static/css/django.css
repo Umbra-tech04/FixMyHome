@@ -1,3 +1,12 @@
 /* Django-specifikus kiegészítések a design/base.css mellé (a base.css a design/-ból másolódik, ezt ne írd felül). */
 /* Regisztráció: a mester-mezők csak mester szerepkörnél látszanak, JS nélkül is. */
 #register-form:has(input[name="role"][value="user"]:checked) #trade-field { display: none; }
+
+/* Térkép net nélkül: ha nem jönnek a csempék, a téma háttere + finom rács látszik (a jelölők a Leaflettől maradnak). */
+#map.leaflet-container, .map-wrap .leaflet-container {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}

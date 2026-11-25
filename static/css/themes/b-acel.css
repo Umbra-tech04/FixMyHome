@@ -1,5 +1,4 @@
 /* B téma – „Acél”: fekete #111111, jelzőpiros-narancs accent #E8461E, fehér / #F2F2F2. Svájci/brutalista rács, nagy tipó: Archivo 800 + Inter. */
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
   --ink: #111111; --accent: #E8461E; --accent-ink: #FFFFFF; --bg: #F2F2F2; --surface: #FFFFFF;

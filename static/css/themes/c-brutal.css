@@ -1,7 +1,6 @@
 /* C téma – „Brutál”: modern brutalista. Betonszürke #E6E6E3, szinte fekete #0B0B0B, középszürke, fehér felületek,
    egyetlen savas lime accent #D4FF3A – csak fekete felületeken. Space Grotesk (óriási címek) + JetBrains Mono (címkék, számok).
    Látható rács, összeérő 1px-es keretek, nincs árnyék, nincs lekerekítés, nincs színátmenet. Ugyanaz a markup, mint A/B. */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 
 :root {
   --ink: #0B0B0B; --accent: #D4FF3A; --accent-ink: #0B0B0B;

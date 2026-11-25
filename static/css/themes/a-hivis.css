@@ -1,5 +1,4 @@
 /* A téma – „Építkezés”: sötétkék #1F2A44, sárga accent #FFB400, meleg papír #F5F3EE. Barlow + Barlow Semi Condensed. */
-@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Semi+Condensed:wght@600;700;800&display=swap');
 
 :root {
   --ink: #1F2A44; --accent: #FFB400; --accent-ink: #1F2A44; --bg: #F5F3EE; --surface: #fff;

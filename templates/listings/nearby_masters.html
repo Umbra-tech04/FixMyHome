@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% load fmh %}
+{% load static fmh %}
 {% block title %}Mesterek a közelben{% endblock %}
 {% block extra_head %}
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+  <script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
 {% endblock %}
 {% block content %}
   <div class="page-head"><div><h1 class="page-title">Mesterek a közelben</h1><p class="page-lead">Add meg, hol vagy, és válaszd ki, milyen szakember kell.</p></div></div>
