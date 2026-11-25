@@ -1,7 +1,8 @@
 /* FixMyHome statikus prototípus – fejléc, szerepkör- és témaváltó, kamu adatok, oldal-interakciók.
-   Minden állapot localStorage-ben van, így a kattintások túlélik az oldalváltást. "Demó visszaállítása" a láblécben. */
+   Minden állapot localStorage-ben van, így a kattintások túlélik az oldalváltást. "Demóadatok visszaállítása" a jobb alsó DEMO panelben. */
 
-const THEMES = { a: 'themes/a-hivis.css', b: 'themes/b-workshop.css', c: 'themes/c-muhely.css', d: 'themes/d-ejszakai.css' };
+const THEMES = { a: 'themes/a-hivis.css', b: 'themes/b-acel.css' };
+const THEME_NAMES = { a: 'Építkezés', b: 'Acél' };
 const LS = { theme: 'fmh-theme', role: 'fmh-role', db: 'fmh-db', jobs: 'fmh-munkak-szuro' };
 
 // Téma beállítása még renderelés előtt (a script a <head>-ben fut), hogy ne villanjon.
@@ -112,7 +113,7 @@ function km(a, b) { // haversine
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 const fmtKm = d => `${d.toFixed(1).replace('.', ',')} km`;
-const pill = d => `<span class="pill-distance">${icon('pin')}${fmtKm(d)}</span>`;
+const pill = d => `<span class="pill-distance">${d.toFixed(1).replace('.', ',')}<small>km</small></span>`;
 function ago(t) {
   const m = Math.round((Date.now() - t) / 60000);
   if (m < 60) return `${Math.max(m, 1)} perce`;
@@ -172,35 +173,56 @@ function validate(form) {
 }
 
 /* ---------- Fejléc / menü ---------- */
+// Szerepkörönként max. 3 menüpont + 1 kiemelt elem jobbra.
 const MENU = {
-  user: [['mesterek.html', 'Mesterek'], ['hirdetes-uj.html', 'Hirdetés feladása'], ['hirdetes-sajat.html', 'Hirdetésem']],
-  mester: [['hirdetesek.html', 'Hirdetések'], ['munkaim.html', 'Munkáim'], ['szolgaltatasaim.html', 'Szolgáltatásaim'], ['alapadatok.html', 'Alapadatok']],
+  user: [['mesterek.html', 'Mesterek'], ['hirdetes-sajat.html', 'Hirdetéseim']],
+  mester: [['hirdetesek.html', 'Hirdetések'], ['munkaim.html', 'Munkáim'], ['szolgaltatasaim.html', 'Szolgáltatásaim']],
 };
 const HOME = { user: 'mesterek.html', mester: 'hirdetesek.html' };
 const page = location.pathname.split('/').pop() || 'login.html';
+const ROLE_PAGES = {
+  user: ['mesterek.html', 'hirdetes-sajat.html', 'hirdetes-uj.html'],
+  mester: ['hirdetesek.html', 'hirdetes-reszlet.html', 'munkaim.html', 'szolgaltatasaim.html', 'szolgaltatas-uj.html', 'alapadatok.html'],
+};
+const PARENT = { 'hirdetes-reszlet.html': 'hirdetesek.html', 'szolgaltatas-uj.html': 'szolgaltatasaim.html' };
 
 function renderHeader() {
   const r = role(), isAuth = document.body.dataset.auth !== undefined;
-  const nav = isAuth ? '' : MENU[r].map(([h, t]) => `<a href="${h}"${h === page || (h === 'hirdetesek.html' && page === 'hirdetes-reszlet.html') || (h === 'szolgaltatasaim.html' && page === 'szolgaltatas-uj.html') ? ' aria-current="page"' : ''}>${t}</a>`).join('');
-  const me = r === 'mester' ? db.me.name : 'Bálint Erika';
+  const cur = PARENT[page] || page;
+  const nav = isAuth ? '' : MENU[r].map(([h, t]) => `<a href="${h}"${h === cur ? ' aria-current="page"' : ''}>${t}</a>`).join('') + '<span class="nav-indicator" aria-hidden="true"></span>';
+  const cta = isAuth ? ''
+    : r === 'user' ? `<a class="btn btn-header" href="hirdetes-uj.html"${page === 'hirdetes-uj.html' ? ' aria-current="page"' : ''}>${icon('plus')}Hirdetés feladása</a>`
+    : `<a class="icon-btn" href="alapadatok.html" title="Alapadatok" aria-label="Alapadatok"${page === 'alapadatok.html' ? ' aria-current="page"' : ''}>${icon('user')}</a>`;
   document.body.insertAdjacentHTML('afterbegin', `
   <header class="site-header"><div class="container">
-    <a class="logo" href="${isAuth ? 'login.html' : HOME[r]}"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true">${ICONS.logo}</svg><span>FixMy<b>Home</b></span></a>
+    <a class="logo" href="${isAuth ? 'login.html' : HOME[r]}"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true">${ICONS.logo}</svg><span>FixMyHome</span></a>
     <nav class="main-nav" aria-label="Főmenü">${nav}</nav>
-    <div class="header-tools">
-      <span class="seg-label">Szerep</span>
-      <div class="seg" role="group" aria-label="Szerepkör"><button data-role="user" aria-pressed="${r === 'user'}">Felhasználó</button><button data-role="mester" aria-pressed="${r === 'mester'}">Mester</button></div>
-      <span class="seg-label">Téma</span>
-      <div class="seg" role="group" aria-label="Téma">${Object.keys(THEMES).map(k => `<button data-theme="${k}" aria-pressed="${k === theme}">${k.toUpperCase()}</button>`).join('')}</div>
-      ${isAuth ? '' : `<a href="login.html" title="${esc(me)} – Kilépés">${avatar(me, 'avatar-sm')}</a>`}
-    </div>
+    <div class="header-cta">${cta}</div>
   </div></header>`);
-  document.body.insertAdjacentHTML('beforeend', `<footer class="site-footer"><div class="container"><span>© 2026 FixMyHome · Vajdaság</span><span class="spacer"></span><button class="linklike" data-reset>Demó visszaállítása</button></div></footer>`);
+  document.body.insertAdjacentHTML('beforeend', `
+  <footer class="site-footer"><div class="container">© 2026 FixMyHome · Vajdaság</div></footer>
+  <details class="demo-panel"><summary>DEMO</summary><div class="demo-body">
+    <div class="row"><span>Szerep</span><div class="seg" role="group" aria-label="Szerepkör"><button data-role="user" aria-pressed="${r === 'user'}">Felhasználó</button><button data-role="mester" aria-pressed="${r === 'mester'}">Mester</button></div></div>
+    <div class="row"><span>Téma</span><div class="seg" role="group" aria-label="Téma">${Object.keys(THEMES).map(k => `<button data-theme="${k}" aria-pressed="${k === theme}">${k.toUpperCase()} ${THEME_NAMES[k]}</button>`).join('')}</div></div>
+    <button class="linklike" data-reset>Demóadatok visszaállítása</button>
+    <a href="login.html">Kilépés (belépő oldal)</a>
+  </div></details>`);
+
+  // Csúszó aktív aláhúzás: a jelenlegi menüpont alatt áll, hoverre odacsúszik.
+  const ind = $('.nav-indicator');
+  if (ind) {
+    const links = $$('.main-nav a'), home = links.find(a => a.hasAttribute('aria-current'));
+    const move = a => { ind.style.opacity = a ? 1 : 0; if (a) { ind.style.width = `${a.offsetWidth}px`; ind.style.transform = `translateX(${a.offsetLeft}px)`; } };
+    move(home);
+    links.forEach(a => a.addEventListener('mouseenter', () => move(a)));
+    $('.main-nav').addEventListener('mouseleave', () => move(home));
+    document.fonts?.ready.then(() => move(home));
+  }
 
   $$('.seg [data-role]').forEach(b => b.onclick = () => {
     localStorage.setItem(LS.role, b.dataset.role);
     if (isAuth) return location.reload();
-    const ok = MENU[b.dataset.role].some(([h]) => h === page);
+    const ok = ROLE_PAGES[b.dataset.role].includes(page);
     location.href = ok ? location.href : HOME[b.dataset.role];
   });
   $$('.seg [data-theme]').forEach(b => b.onclick = () => { localStorage.setItem(LS.theme, b.dataset.theme); location.reload(); });
@@ -208,17 +230,16 @@ function renderHeader() {
 }
 
 /* ---------- Kártyák ---------- */
-function mesterCard(m, d) {
-  return `<li class="card hoverable" data-id="${m.id}">
-    <div class="card-head">${avatar(m.name)}
-      <div style="flex:1"><h3>${esc(m.name)} ${m.verified ? `<span class="verified" title="Ellenőrzött mester">${icon('check')}</span>` : ''}</h3>
-        <div class="row" style="gap:8px"><span class="chip chip-trade">${icon(m.trade)}${esc(m.trade)}</span>${pill(d)}</div></div>
-    </div>
-    <div class="card-meta"><span>${icon('pin')}${esc(m.town)}</span><span>${esc(m.price)}</span><span class="rating-none">Még nincs értékelés</span></div>
-    <div class="card-actions"><a class="btn btn-primary btn-sm" href="hirdetes-uj.html?kat=${encodeURIComponent(m.trade)}">Ajánlatot kérek</a></div>
-  </li>`;
+const trade = t => `<span class="chip chip-trade">${icon(t)}${esc(t)}</span>`;
+function mesterCard(m, d, tag = 'li') {
+  return `<${tag} class="card hoverable" data-id="${m.id}">
+    <div class="card-top"><div><h3>${esc(m.name)}</h3>${trade(m.trade)}</div>${pill(d)}</div>
+    <p class="card-sub">${icon('pin')}${esc(m.town)} <span class="rating-none">· Még nincs értékelés</span></p>
+    <div class="card-actions"><a class="btn btn-secondary btn-sm" href="hirdetes-uj.html?kat=${encodeURIComponent(m.trade)}">Ajánlatot kérek</a></div>
+  </${tag}>`;
 }
 const empty = (ic, title, text, action = '') => `<div class="empty-state">${icon(ic)}<h3>${title}</h3><p>${text}</p>${action}</div>`;
+const head = (title, lead, action = '', eyebrow = '') => `<div class="page-head"><div>${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}<h1 class="page-title">${esc(title)}</h1><p class="page-lead">${lead}</p></div>${action}</div>`;
 
 /* ---------- Oldalak ---------- */
 const PAGES = {
@@ -253,24 +274,24 @@ const PAGES = {
 
   mesterek() {
     let center = { ...TOWNS.Szabadka, label: 'Szabadka' }, radius = 5, cat = null, view = 'list', map, layer, meMarker;
-    const cats = $('#cat-grid');
-    cats.innerHTML = [['all', 'Mind'], ...CATS.map(c => [c, c])].map(([k, t], i) => `<button class="cat-tile" style="--i:${i}" data-cat="${k}" aria-pressed="${k === 'all'}">${icon(k)}<span>${t}</span></button>`).join('');
-    cats.onclick = e => {
+    const tabs = $('#cat-tabs');
+    tabs.innerHTML = [['all', 'Mind'], ...CATS.map(c => [c, c])].map(([k, t]) => `<button data-cat="${k}" aria-pressed="${k === 'all'}">${t}</button>`).join('');
+    tabs.onclick = e => {
       const b = e.target.closest('[data-cat]'); if (!b) return;
       cat = b.dataset.cat === 'all' ? null : b.dataset.cat;
-      $$('[data-cat]', cats).forEach(x => x.setAttribute('aria-pressed', x === b)); render();
+      $$('[data-cat]', tabs).forEach(x => x.setAttribute('aria-pressed', x === b)); render();
     };
-    $$('[data-radius]').forEach(b => b.onclick = () => setRadius(+b.dataset.radius));
     const setRadius = r => { radius = r; $$('[data-radius]').forEach(x => x.setAttribute('aria-pressed', +x.dataset.radius === r)); render(); };
+    $$('[data-radius]').forEach(b => b.onclick = () => setRadius(+b.dataset.radius));
     $$('[data-view]').forEach(b => b.onclick = () => {
       view = b.dataset.view;
       $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', x === b));
-      $('#list-view').hidden = view !== 'list'; $('#map-view').hidden = view !== 'map';
+      $$('[data-view-panel]').forEach(p => { p.hidden = p.dataset.viewPanel !== view; });
       if (view === 'map') initMap(); render();
     });
-    const setCenter = (c, msg) => { center = c; $('#where-label').textContent = c.label; toast(msg); render(); };
+    const setCenter = (c, msg) => { center = c; $('#where-input').value = c.label; toast(msg); render(); };
     $('#locate-btn').onclick = () => {
-      if (!navigator.geolocation) return toast('A böngésző nem támogatja a helymeghatározást – add meg a címet.');
+      if (!navigator.geolocation) return toast('A böngésző nem támogatja a helymeghatározást – írd be a települést.');
       navigator.geolocation.getCurrentPosition(
         p => setCenter({ lat: p.coords.latitude, lng: p.coords.longitude, label: 'Jelenlegi helyed' }, 'Megvan a helyed!'),
         () => { toast('Nem kaptunk helyengedélyt – írd be a települést vagy irányítószámot.'); $('#where-input').focus(); },
@@ -286,7 +307,7 @@ const PAGES = {
 
     function initMap() {
       if (map || !window.L) return;
-      map = L.map('map', { zoomControl: true }).setView([center.lat, center.lng], 12);
+      map = L.map('map').setView([center.lat, center.lng], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map);
       layer = L.layerGroup().addTo(map);
       map.on('click', () => $('#sheet').classList.remove('open'));
@@ -296,14 +317,14 @@ const PAGES = {
       setTimeout(() => map.invalidateSize(), 0);
       layer.clearLayers(); meMarker?.remove();
       meMarker = L.marker([center.lat, center.lng], { icon: L.divIcon({ className: '', html: '<div class="map-me"></div>', iconSize: [18, 18] }), title: 'Itt vagy' }).addTo(map);
-      L.circle([center.lat, center.lng], { radius: radius * 1000, color: getComputedStyle(document.body).getPropertyValue('--primary'), weight: 2, fillOpacity: .06 }).addTo(layer);
+      L.circle([center.lat, center.lng], { radius: radius * 1000, color: getComputedStyle(document.body).getPropertyValue('--ink').trim(), weight: 2, fillOpacity: .05 }).addTo(layer);
       list.forEach(({ m, d }) => {
-        const mk = L.marker([m.lat, m.lng], { title: m.name, icon: L.divIcon({ className: '', html: `<div class="map-pin"><span>${initials(m.name)}</span></div>`, iconSize: [38, 38], iconAnchor: [19, 38] }) }).addTo(layer);
+        const mk = L.marker([m.lat, m.lng], { title: m.name, icon: L.divIcon({ className: '', html: `<div class="map-pin"><span>${initials(m.name)}</span></div>`, iconSize: [36, 36], iconAnchor: [18, 18] }) }).addTo(layer);
         mk.on('click', ev => {
           L.DomEvent.stopPropagation(ev);
           $$('.map-pin.active').forEach(p => p.classList.remove('active'));
           mk.getElement().firstChild.classList.add('active');
-          $('#sheet-body').innerHTML = mesterCard(m, d).replace(/^<li/, '<div').replace(/<\/li>$/, '</div>');
+          $('#sheet-body').innerHTML = mesterCard(m, d, 'div');
           $('#sheet').classList.add('open');
         });
       });
@@ -314,11 +335,11 @@ const PAGES = {
     function render() {
       const list = db.mesterek.map(m => ({ m, d: km(center, m) }))
         .filter(x => x.d <= radius && (!cat || x.m.trade === cat)).sort((a, b) => a.d - b.d);
-      $('#result-count').textContent = `${list.length} mester ${radius} km-en belül${cat ? ` · ${cat}` : ''}`;
+      $('#result-count').textContent = `${list.length} mester ${radius} km-en belül, ${center.label} körül${cat ? ` · ${cat}` : ''}`;
       const el = $('#mester-list');
       el.innerHTML = list.length ? list.map(x => mesterCard(x.m, x.d)).join('')
-        : empty('search', 'Nincs mester ebben a körzetben', radius < 20 ? 'Próbáld nagyobb körzettel – lehet, hogy pár kilométerrel arrébb van a megfelelő szakember.' : 'Ebben a körzetben sajnos még nincs ilyen mester. Adj fel hirdetést, és értesítjük a környékbelieket!',
-          radius < 20 ? '<button class="btn btn-primary" data-try20>Próbáld 20 km-rel</button>' : '<a class="btn btn-primary" href="hirdetes-uj.html">Hirdetés feladása</a>');
+        : empty('search', 'Nincs mester ebben a körzetben', radius < 20 ? 'Pár kilométerrel arrébb lehet, hogy van megfelelő szakember.' : 'Adj fel hirdetést, és szólunk a környékbeli mestereknek.',
+          radius < 20 ? '<button class="btn btn-secondary" data-try20>Próbáld 20 km-rel</button>' : '<a class="btn btn-secondary" href="hirdetes-uj.html">Hirdetés feladása</a>');
       stagger(el);
       $('[data-try20]', el)?.addEventListener('click', () => setRadius(20));
       $('#sheet').classList.remove('open');
@@ -365,40 +386,28 @@ const PAGES = {
     const root = $('#own-ad');
     const draw = () => {
       const a = db.ownAd, s = a.status;
-      const steps = ['open', 'in_progress', 'closed'], idx = steps.indexOf(s);
-      const imgs = a.images.length ? a.images.map((src, i) => `<div><img src="${src}" alt="Kép ${i + 1}"></div>`).join('') : [ph(a.cat), ph(a.cat)].map(x => x).join('');
-      root.innerHTML = `
-      <div class="grid-2">
-        <div class="stack">
-          <div class="card">
-            <div class="row">${badge(s)}<span class="chip chip-trade">${icon(a.cat)}${esc(a.cat)}</span><span class="muted small">${icon('pin')} ${esc(a.town)} · feladva ${ago(a.created)}</span></div>
-            <h1 class="page-title" style="margin-top:12px">${esc(a.title)}</h1>
-            <p>${esc(a.desc)}</p>
-            <div class="gallery">${imgs}</div>
-            <ol class="stepper ${s === 'withdrawn' ? 'is-withdrawn' : ''}" aria-label="Hirdetés állapota">
-              ${['Nyitott', 'Folyamatban', 'Lezárva'].map((t, i) => `<li class="${s === 'withdrawn' ? '' : i < idx || s === 'closed' ? 'done' : i === idx ? 'current' : ''}">${t}</li>`).join('')}
-            </ol>
-          </div>
-          <h2 class="section-title">Jelentkezők (${a.applicants.length})</h2>
-          ${a.applicants.length ? `<ul class="card-list one-col" id="applicants">${a.applicants.map((p, i) => `
-            <li class="card">
-              <div class="card-head">${avatar(p.name)}<div style="flex:1">
-                <div class="row" style="justify-content:space-between"><h3>${esc(p.name)}</h3>${badge(p.status)}</div>
-                <div class="row" style="gap:8px"><span class="chip chip-trade">${icon(p.trade)}${esc(p.trade)}</span><span class="rating-none">Még nincs értékelés</span></div>
-                <p style="margin:12px 0 0">„${esc(p.msg)}”</p>
-              </div></div>
-              ${s === 'open' && p.status === 'pending' ? `<div class="card-actions"><button class="btn btn-primary" data-pick="${i}">${icon('ok')}Kiválasztom</button></div>` : ''}
-            </li>`).join('')}</ul>` : empty('inbox', 'Még nincs jelentkező', 'Amint egy környékbeli mester jelentkezik, itt látod.')}
+      const idx = ['open', 'in_progress', 'closed'].indexOf(s);
+      const imgs = a.images.length ? a.images.map((src, i) => `<div><img src="${src}" alt="Kép ${i + 1}"></div>`).join('') : ph(a.cat) + ph(a.cat);
+      const lead = { open: 'Válaszd ki a jelentkezők közül, akivel dolgozni szeretnél.', in_progress: 'Kiválasztottad a mestert. Ha elkészült a munka, zárd le a hirdetést.', closed: 'A munka lezárva. Köszönjük, hogy a FixMyHome-ot választottad!', withdrawn: 'A hirdetést visszavontad, a mesterek már nem látják.' }[s];
+      const action = s === 'in_progress' ? '<button class="btn btn-primary" data-close>Lezárás</button>'
+        : s === 'open' ? '<button class="btn btn-secondary" data-withdraw>Visszavonás</button>' : '';
+      root.innerHTML = head(a.title, lead, action, 'Hirdetéseim') + `
+        <div class="card">
+          <div class="card-top">${badge(s)}<span class="card-sub">${trade(a.cat)} · ${icon('pin')}${esc(a.town)} · ${ago(a.created)}</span></div>
+          <p>${esc(a.desc)}</p>
+          <div class="gallery">${imgs}</div>
+          <ol class="stepper ${s === 'withdrawn' ? 'is-withdrawn' : ''}" aria-label="Hirdetés állapota">
+            ${['Nyitott', 'Folyamatban', 'Lezárva'].map((t, i) => `<li class="${s === 'withdrawn' ? '' : i < idx || s === 'closed' ? 'done' : i === idx ? 'current' : ''}">${t}</li>`).join('')}
+          </ol>
         </div>
-        <aside class="card stack">
-          <h3>Műveletek</h3>
-          <p class="muted small">${{ open: 'A hirdetés nyitott, a mesterek jelentkezhetnek.', in_progress: 'Kiválasztottál egy mestert, több jelentkezés nem fogadható.', closed: 'A munka lezárva. Köszönjük, hogy a FixMyHome-ot választottad!', withdrawn: 'A hirdetést visszavontad.' }[s]}</p>
-          ${s === 'in_progress' ? '<button class="btn btn-primary btn-block" data-close>Lezárás</button>' : ''}
-          ${s === 'open' ? '<button class="btn btn-danger btn-block" data-withdraw>Visszavonás</button>' : ''}
-          ${s === 'closed' || s === 'withdrawn' ? '<a class="btn btn-primary btn-block" href="hirdetes-uj.html">Új hirdetés feladása</a>' : ''}
-          <a class="btn btn-secondary btn-block" href="mesterek.html">Mesterek böngészése</a>
-        </aside>
-      </div>`;
+        <h2 class="section-title">Jelentkezők (${a.applicants.length})</h2>
+        ${a.applicants.length ? `<ul class="card-list" id="applicants">${a.applicants.map((p, i) => `
+          <li class="card">
+            <div class="card-top"><div><h3>${esc(p.name)}</h3>${trade(p.trade)}</div>${badge(p.status)}</div>
+            <p>„${esc(p.msg)}”</p>
+            <p class="rating-none">Még nincs értékelés</p>
+            ${s === 'open' && p.status === 'pending' ? `<div class="card-actions"><button class="btn btn-secondary" data-pick="${i}">Kiválasztom</button></div>` : ''}
+          </li>`).join('')}</ul>` : empty('inbox', 'Még nincs jelentkező', 'Amint egy környékbeli mester jelentkezik, itt látod.')}`;
       $$('#applicants').forEach(stagger);
     };
     root.onclick = async e => {
@@ -406,7 +415,7 @@ const PAGES = {
       const pick = e.target.closest('[data-pick]');
       if (pick) {
         const p = a.applicants[+pick.dataset.pick];
-        if (!await modal({ title: `${p.name} kiválasztása`, body: '<p>A többi jelentkezést elutasítjuk, a hirdetés <b>Folyamatban</b> állapotba kerül.</p>', ok: 'Kiválasztom' })) return;
+        if (!await modal({ title: `${p.name} kiválasztása`, body: '<p>A többi jelentkezést elutasítjuk, a hirdetés Folyamatban állapotba kerül.</p>', ok: 'Kiválasztom' })) return;
         a.applicants.forEach(x => { x.status = x === p ? 'accepted' : 'rejected'; });
         a.status = 'in_progress'; save(); draw(); toast(`${p.name} kiválasztva – értesítettük.`);
       }
@@ -424,16 +433,17 @@ const PAGES = {
 
   hirdetesek() {
     const me = db.me, from = TOWNS[me.town];
-    $('#my-trades').innerHTML = me.trades.map(t => `<span class="chip chip-trade">${icon(t)}${esc(t)}</span>`).join('') + `<span class="muted small">${icon('pin')} ${esc(me.town)} · 20 km</span>`;
+    $('#my-trades').textContent = `${me.trades.join(', ')} munkák ${me.town} 20 km-es körzetében, a legközelebbi elöl.`;
     const list = db.ads.filter(a => a.status === 'open' && me.trades.includes(a.cat)).map(a => ({ a, d: km(from, a) })).filter(x => x.d <= 20).sort((x, y) => x.d - y.d);
     const el = $('#ad-list');
     el.innerHTML = list.length ? list.map(({ a, d }) => `
-      <li><a class="card card-link" href="hirdetes-reszlet.html?id=${a.id}">
-        <div class="row" style="justify-content:space-between">${badge(a.status)}${db.applications[a.id]?.status === 'pending' ? '<span class="badge badge-pending">Jelentkeztél</span>' : ''}</div>
-        <h3 style="margin-top:10px">${esc(a.title)}</h3>
-        <div class="card-meta"><span class="chip chip-trade">${icon(a.cat)}${esc(a.cat)}</span><span>${icon('pin')}${esc(a.town)}</span>${pill(d)}<span>${icon('clock')}${ago(a.created)}</span></div>
-      </a></li>`).join('')
-      : empty('inbox', 'Nincs nyitott hirdetés a környéken', 'Jelenleg senki nem keres a szakmádban 20 km-en belül. Bővítsd a szakmáidat az alapadatoknál!', '<a class="btn btn-primary" href="alapadatok.html">Alapadatok</a>');
+      <li class="card hoverable">
+        <div class="card-top">${db.applications[a.id]?.status === 'pending' ? '<span class="badge badge-pending">Jelentkeztél</span>' : badge(a.status)}${pill(d)}</div>
+        <h3 style="margin-top:12px">${esc(a.title)}</h3>
+        <p class="card-sub">${icon('pin')}${esc(a.town)} · ${ago(a.created)}</p>
+        <div class="card-actions"><a class="btn btn-secondary btn-sm" href="hirdetes-reszlet.html?id=${a.id}">Megnézem</a></div>
+      </li>`).join('')
+      : empty('inbox', 'Nincs nyitott hirdetés a környéken', 'Most senki nem keres a szakmádban 20 km-en belül. Bővítsd a szakmáidat az alapadatoknál!', '<a class="btn btn-secondary" href="alapadatok.html">Alapadatok</a>');
     stagger(el);
   },
 
@@ -441,29 +451,25 @@ const PAGES = {
     const a = db.ads.find(x => x.id === +params.get('id')) || db.ads[0];
     const root = $('#ad-detail');
     const draw = () => {
-      const app = db.applications[a.id], closed = a.status !== 'open';
-      const d = km(TOWNS[db.me.town], a);
-      root.innerHTML = `
-      <a href="hirdetesek.html" class="btn btn-ghost btn-sm" style="padding-left:0">← Vissza a hirdetésekhez</a>
-      <div class="grid-2" style="margin-top:8px">
+      const app = db.applications[a.id], closed = a.status !== 'open', applied = app?.status === 'pending';
+      const action = closed ? '<button class="btn btn-primary" disabled>Jelentkezem</button>'
+        : applied ? '<button class="btn btn-secondary" data-unapply>Jelentkezés visszavonása</button>'
+        : '<button class="btn btn-primary" data-apply>Jelentkezem</button>';
+      const lead = closed ? `Ez a hirdetés már ${STATUS[a.status][0].toLowerCase()}, nem lehet jelentkezni.`
+        : applied ? 'Jelentkeztél. Ha a hirdető kiválaszt, megjelenik a Munkáim között.'
+        : 'Ha vállalod, jelentkezz egy rövid üzenettel a hirdetőnek.';
+      root.innerHTML = `<a href="hirdetesek.html" class="btn btn-ghost">← Hirdetések</a>` + head(a.title, lead, action, a.cat) + `
         <div class="card">
-          <div class="row">${badge(a.status)}<span class="chip chip-trade">${icon(a.cat)}${esc(a.cat)}</span>${pill(d)}</div>
-          <h1 class="page-title" style="margin-top:12px">${esc(a.title)}</h1>
-          <div class="card-meta" style="margin-bottom:16px"><span>${icon('user')}${esc(a.client)}</span><span>${icon('pin')}${esc(a.town)}</span><span>${icon('clock')}Feladva ${ago(a.created)}</span></div>
+          <div class="card-top"><div>${applied ? '<span class="badge badge-pending">Jelentkeztél</span>' : badge(a.status)}
+            <p class="card-sub" style="margin-top:12px">${icon('user')}${esc(a.client)} · ${icon('pin')}${esc(a.town)} · ${ago(a.created)}</p></div>${pill(km(TOWNS[db.me.town], a))}</div>
           <p>${esc(a.desc)}</p>
-          ${a.images ? `<div class="gallery">${Array.from({ length: a.images }, () => ph(a.cat)).join('')}</div>` : '<p class="muted small">Nincs csatolt kép.</p>'}
-        </div>
-        <aside class="card stack">
-          <h3>Jelentkezés</h3>
-          ${closed ? `<p class="muted">Ez a hirdetés már ${STATUS[a.status][0].toLowerCase()}, nem lehet jelentkezni.</p><button class="btn btn-primary btn-block" disabled>Jelentkezem</button>`
-            : app?.status === 'pending' ? `<div class="row"><span class="badge badge-pending">Jelentkeztél</span></div><p class="small">„${esc(app.msg)}”</p><button class="btn btn-secondary btn-block" data-unapply>Jelentkezés visszavonása</button>`
-            : `<p class="muted small">${app?.status === 'app_withdrawn' ? 'Visszavontad a jelentkezésed – újra jelentkezhetsz.' : 'Írj pár sort az ügyfélnek: mikor érsz rá, mit javasolsz.'}</p><button class="btn btn-primary btn-block" data-apply>${icon('tool')}Jelentkezem</button>`}
-        </aside>
-      </div>`;
+          ${applied ? `<p class="demo-hint">Az üzeneted: „${esc(app.msg)}”</p>` : ''}
+          ${a.images ? `<div class="gallery">${Array.from({ length: a.images }, () => ph(a.cat)).join('')}</div>` : ''}
+        </div>`;
     };
     root.onclick = async e => {
       if (e.target.closest('[data-apply]')) {
-        const d = await modal({ title: 'Jelentkezés a munkára', ok: 'Jelentkezem', body: `<div class="form-field"><label for="apply-msg">Rövid üzenet az ügyfélnek</label><textarea id="apply-msg" required maxlength="300" placeholder="Pl. Holnap délután ki tudok menni felmérni."></textarea></div>` });
+        const d = await modal({ title: 'Jelentkezés a munkára', ok: 'Jelentkezem', body: `<div class="form-field"><label for="apply-msg">Rövid üzenet a hirdetőnek</label><textarea id="apply-msg" maxlength="300" placeholder="Pl. Holnap délután ki tudok menni felmérni."></textarea></div>` });
         if (!d) return;
         db.applications[a.id] = { msg: $('#apply-msg', d).value.trim() || 'Szívesen elvállalom.', status: 'pending' };
         save(); draw(); toast('Jelentkezés elküldve!');
@@ -481,7 +487,7 @@ const PAGES = {
     let f = params.get('allapot') || localStorage.getItem(LS.jobs) || 'in_progress';
     if (!FILTERS[f]) f = 'in_progress';
     const bar = $('#job-filter');
-    bar.innerHTML = Object.entries(FILTERS).map(([k, t]) => `<button class="chip" data-f="${k}" aria-pressed="${k === f}">${t}</button>`).join('');
+    bar.innerHTML = Object.entries(FILTERS).map(([k, t]) => `<button data-f="${k}" aria-pressed="${k === f}">${t}</button>`).join('');
     bar.onclick = e => {
       const b = e.target.closest('[data-f]'); if (!b) return;
       f = b.dataset.f; localStorage.setItem(LS.jobs, f);
@@ -491,11 +497,12 @@ const PAGES = {
     const draw = () => {
       const list = db.jobs.filter(j => f === 'mind' || j.status === f), el = $('#job-list');
       el.innerHTML = list.length ? list.map(j => `
-        <li class="card hoverable"><div class="card-head">${avatar(j.client)}<div style="flex:1">
-          <div class="row" style="justify-content:space-between"><h3>${esc(j.work)}</h3>${badge(j.status)}</div>
-          <div class="card-meta"><span>${icon('user')}${esc(j.client)}</span><span>${icon('pin')}${esc(j.place)}</span><span>${icon('calendar')}Még nincs időpont</span></div>
-        </div></div></li>`).join('')
-        : empty('inbox', 'Nincs ilyen munkád', f === 'closed' ? 'Még egy munkát sem zártál le.' : 'Jelentkezz a környékbeli hirdetésekre, és itt látod az elvállalt munkákat.', '<a class="btn btn-primary" href="hirdetesek.html">Hirdetések böngészése</a>');
+        <li class="card hoverable">
+          <div class="card-top"><h3>${esc(j.work)}</h3>${badge(j.status)}</div>
+          <p class="card-sub">${icon('user')}${esc(j.client)} · ${icon('pin')}${esc(j.place)}</p>
+          <p class="rating-none">${icon('calendar')} Még nincs időpont</p>
+        </li>`).join('')
+        : empty('inbox', 'Nincs ilyen munkád', f === 'closed' ? 'Még egy munkát sem zártál le.' : 'Jelentkezz a környékbeli hirdetésekre, és itt látod az elvállalt munkákat.', '<a class="btn btn-secondary" href="hirdetesek.html">Hirdetések</a>');
       stagger(el);
     };
     draw();
@@ -506,17 +513,15 @@ const PAGES = {
     const draw = () => {
       el.innerHTML = db.services.length ? db.services.map(s => `
         <li class="card hoverable" data-id="${s.id}">
-          <div class="row" style="justify-content:space-between">${badge(s.status)}<span class="chip chip-trade">${icon(s.trade)}${esc(s.trade)}</span></div>
-          <h3 style="margin-top:10px">${esc(s.name)}</h3>
-          <p class="muted" style="margin:0">${esc(s.desc)}</p>
-          <div class="card-meta"><span><b>${esc(s.price)}</b></span><span>${icon('pin')}${esc(s.area)}</span></div>
+          <div class="card-top"><div><h3>${esc(s.name)}</h3>${trade(s.trade)}</div>${badge(s.status)}</div>
+          <p class="card-sub" style="margin-top:12px"><b>${esc(s.price)}</b> · ${esc(s.area)}</p>
           <div class="card-actions">
             <a class="btn btn-secondary btn-sm" href="szolgaltatas-uj.html?id=${s.id}">Szerkesztés</a>
             <button class="btn btn-secondary btn-sm" data-toggle>${s.status === 'published' ? 'Szüneteltetés' : 'Közzététel'}</button>
-            <button class="btn btn-danger btn-sm" data-del>Törlés</button>
+            <button class="btn btn-ghost btn-sm" data-del>Törlés</button>
           </div>
         </li>`).join('')
-        : empty('tool', 'Még nincs szolgáltatásod', 'Hirdesd meg, mit vállalsz – így az ügyfelek könnyebben megtalálnak.', '<a class="btn btn-primary" href="szolgaltatas-uj.html">Új szolgáltatás</a>');
+        : empty('tool', 'Még nincs szolgáltatásod', 'Hirdesd meg, mit vállalsz – így az ügyfelek könnyebben megtalálnak.');
       stagger(el);
     };
     el.onclick = async e => {
@@ -556,10 +561,10 @@ const PAGES = {
 
   alapadatok() {
     const f = $('#profile-form');
-    $('#trade-chips').innerHTML = CATS.map(c => `<label class="chip"><input type="checkbox" name="trades" value="${c}" ${db.me.trades.includes(c) ? 'checked' : ''} required data-msg="Legalább egy szakmát válassz.">${icon(c)}${c}</label>`).join('');
+    $('#trade-chips').innerHTML = CATS.map(c => `<label class="chip"><input type="checkbox" name="trades" value="${c}" ${db.me.trades.includes(c) ? 'checked' : ''} required data-msg="Legalább egy szakmát válassz.">${c}</label>`).join('');
     f.town.innerHTML = Object.keys(TOWNS).map(c => `<option ${c === db.me.town ? 'selected' : ''}>${c}</option>`).join('');
     f.available.checked = db.me.available;
-    const lbl = () => { $('#avail-text').textContent = f.available.checked ? 'Az ügyfelek most elérhetőként látnak.' : 'Most nem jelensz meg a „most elérhető” mesterek között.'; };
+    const lbl = () => { $('#avail-text').textContent = f.available.checked ? 'Az ügyfelek most elérhetőként látnak.' : 'Most nem jelensz meg az elérhető mesterek között.'; };
     f.available.onchange = () => { lbl(); db.me.available = f.available.checked; save(); toast(f.available.checked ? 'Most elérhető vagy.' : 'Elérhetőség kikapcsolva.'); };
     lbl();
     f.onsubmit = e => {
