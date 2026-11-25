@@ -1,0 +1,75 @@
+/* FixMyHome V2 – mester-oldalak (hirdetés-tábla + kanban). Az oldalsáv, a .bar-btn és a szakmaszínek a v2.css-ben/v2.js-ben vannak. */
+:root {
+  --concrete: #E6E6E3; --ink: #0B0B0B; --lime: #D4FF3A; --line: #0B0B0B; --muted: #55554F;
+  --display: "Space Grotesk", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* --- Közös elemek az oldalon --- */
+.m-eyebrow { font: 600 .8rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+.m-title { font: 700 clamp(2.6rem, 6vw, 5.2rem)/.92 var(--display); letter-spacing: -.03em; text-transform: uppercase; margin: 0 0 28px; }
+.m-filters { display: flex; align-items: center; gap: 0; border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); margin-bottom: 0; }
+.m-filters .label { font: 600 .8rem var(--mono); letter-spacing: .1em; padding: 0 20px 0 0; }
+.m-filters button { font: 700 .95rem var(--mono); letter-spacing: .08em; background: transparent; border: 0; border-left: 3px solid var(--ink); padding: 16px 26px; cursor: pointer; color: var(--ink); }
+.m-filters button[aria-pressed="true"] { background: var(--ink); color: var(--lime); }
+.m-filters button:hover:not([aria-pressed="true"]) { background: #d6d6d2; }
+.m-filters .count { margin-left: auto; font: 600 .85rem var(--mono); letter-spacing: .08em; padding-right: 4px; }
+.m-filters button:focus-visible, .board-row:focus-visible { outline: 4px solid var(--lime); outline-offset: -4px; }
+.row-head .bar-btn, .job .bar-btn { width: auto; gap: 16px; white-space: nowrap; }
+.bar-btn.is-done { background: transparent; color: var(--ink); cursor: default; }
+.bar-btn.is-done::after { content: "✓"; }
+.bar-btn.is-done:hover { background: transparent; color: var(--ink); }
+.mono-tag { display: inline-block; font: 600 .72rem var(--mono); letter-spacing: .1em; text-transform: uppercase; border: 2px solid var(--ink); padding: 4px 8px; }
+
+/* --- 1) Hirdetés-tábla --- */
+.board { list-style: none; margin: 0; padding: 0; }
+.board-row { border-bottom: 3px solid var(--ink); animation: row-in .5s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms); }
+.row-head { display: grid; grid-template-columns: 170px 1fr 220px auto; align-items: center; gap: 28px; padding: 22px 0; cursor: pointer; }
+.row-dist { font: 700 3.4rem/1 var(--display); letter-spacing: -.04em; }
+.row-dist small { font: 600 .9rem var(--mono); letter-spacing: .1em; margin-left: 4px; }
+.row-main { border-left: 10px solid var(--cat); padding-left: 20px; min-width: 0; }
+.row-trade { font: 600 .75rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cat); filter: brightness(.8); }
+.row-title { font: 700 1.6rem/1.1 var(--display); margin: 4px 0 6px; }
+.row-desc { margin: 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-meta { font: 500 .85rem var(--mono); letter-spacing: .04em; text-transform: uppercase; line-height: 1.6; }
+.row-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .45s var(--ease); }
+.board-row.open .row-panel { grid-template-rows: 1fr; }
+.row-panel > div { overflow: hidden; }
+.panel-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; padding: 0 0 28px 198px; }
+.panel-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-content: start; }
+.panel-gallery span { aspect-ratio: 4/3; background: repeating-linear-gradient(135deg, var(--cat) 0 12px, color-mix(in srgb, var(--cat) 75%, #000) 12px 24px); }
+.panel-gallery p { grid-column: 1 / -1; font: .8rem var(--mono); margin: 0; color: var(--muted); }
+.panel-form label { display: block; font: 600 .8rem var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+.panel-form textarea { width: 100%; box-sizing: border-box; min-height: 110px; border: 3px solid var(--ink); background: #fff; padding: 14px; font: 1rem var(--display); border-radius: 0; resize: vertical; }
+.panel-form textarea:focus { outline: 4px solid var(--lime); outline-offset: 0; }
+.panel-form .field-error { font: 600 .8rem var(--mono); color: #B00020; margin: 6px 0 0; }
+.panel-form .bar-btn { margin-top: 12px; }
+.board-row.applied .row-title::after { content: "  ✓"; color: var(--cat); }
+.empty { padding: 48px 0; font: 600 1rem var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+
+/* --- 2) Kanban --- */
+.kanban { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 3px solid var(--ink); }
+.col + .col { border-left: 3px solid var(--ink); }
+.col-head { display: flex; align-items: baseline; justify-content: space-between; padding: 20px 24px; border-bottom: 3px solid var(--ink); }
+.col-head h2 { font: 700 1rem var(--mono); letter-spacing: .12em; margin: 0; }
+.col-head .num { font: 700 5rem/.85 var(--display); letter-spacing: -.05em; }
+.col.done .col-head { background: var(--ink); color: #fff; }
+.col.done .col-head .num { color: var(--lime); }
+.col-body { list-style: none; margin: 0; padding: 20px; display: grid; gap: 16px; align-content: start; min-height: 320px; }
+.job { background: #fff; border: 3px solid var(--ink); border-left: 12px solid var(--cat); padding: 20px; animation: row-in .5s var(--ease) both; animation-delay: calc(var(--i, 0) * 70ms); }
+.job h3 { font: 700 1.35rem/1.15 var(--display); margin: 6px 0 12px; }
+.job .who { font: 600 .8rem var(--mono); letter-spacing: .08em; text-transform: uppercase; margin: 0; }
+.job .where { margin: 4px 0 14px; color: var(--muted); }
+.job .actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.col.done .job { background: #f3f3f0; }
+.col.done .job .bar-btn { display: none; }
+.col-empty { font: 600 .85rem var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 24px 4px; }
+
+@keyframes row-in { from { opacity: 0; transform: translateY(18px); } }
+@media (max-width: 900px) {
+  .row-head { grid-template-columns: 1fr; gap: 10px; }
+  .panel-inner { grid-template-columns: 1fr; padding-left: 0; }
+  .kanban { grid-template-columns: 1fr; }
+  .col + .col { border-left: 0; border-top: 3px solid var(--ink); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
