@@ -31,6 +31,8 @@
   };
   const norm = t => slug(t).replace(/[^a-z0-9 ]/g, '');
   const findTowns = q => { q = norm(q.trim()); return Object.entries(TOWNS).filter(([hu, v]) => !q || norm(hu).startsWith(q) || norm(v[2]).startsWith(q) || norm(hu).includes(q) || norm(v[2]).includes(q)); };
+  // Ezres tagolás nem törő szóközzel, mint a mester-oldalakon: „3000 din/óra” → „3 000 din/óra”.
+  const fmtPrice = p => p.replace(/\d{4,}/g, n => Number(n).toLocaleString('hu-HU', { useGrouping: 'always' })).replace(/ (din)/g, '\u00A0$1');
   const MESTEREK = [
     ['Kovács Péter', 'Villanyszerelő', 46.1051, 19.6602, 'Szabadka', '3000 din/óra'], ['Szabó Anikó', 'Festő', 46.0942, 19.6721, 'Szabadka', '2500 din/óra'],
     ['Tóth Gábor', 'Vízszerelő', 46.1120, 19.6488, 'Szabadka', '3500 din/óra'], ['Nagy Zoltán', 'Asztalos', 46.0880, 19.6430, 'Szabadka', '4000 din/óra'],
@@ -41,7 +43,7 @@
     ['Sárközi Attila', 'Villanyszerelő', 45.9310, 20.0940, 'Zenta', '2900 din/óra'], ['Kovács Anna', 'Festő', 45.9250, 20.0810, 'Zenta', '2500 din/óra'],
     ['Takács Imre', 'Vízszerelő', 45.6190, 20.0400, 'Óbecse', '3200 din/óra'], ['Pintér Zsolt', 'Asztalos', 45.6120, 20.0280, 'Óbecse', '3700 din/óra'],
     ['Rácz Mónika', 'Burkoló', 45.6220, 20.0450, 'Óbecse', '3100 din/m²'],
-  ].map(([name, trade, lat, lng, town, price], id) => ({ id, name, trade, lat, lng, town, price }));
+  ].map(([name, trade, lat, lng, town, price], id) => ({ id, name, trade, lat, lng, town, price: fmtPrice(price) }));
   const km = (a, b) => { const R = 6371, r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r; const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
   const fmt = d => d.toFixed(1).replace('.', ',');
   const initials = n => n.split(' ').map(w => w[0]).join('').slice(0, 2);
