@@ -113,7 +113,7 @@ main.container > :nth-child(2) { animation-delay: .06s; } main.container > :nth-
 .card h3 { font-size: 1.3rem; margin: 0 0 6px; }
 .card-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px 16px; }
 .card-top > div { flex: 1 1 160px; min-width: 0; }
-.card-sub { color: var(--muted); display: flex; gap: 8px; align-items: center; margin: 0; }
+.card-sub { color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; margin: 0; }
 .card-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
 .card p { margin: 10px 0 0; }
 
@@ -311,7 +311,7 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
 .card-desc { color: var(--muted); margin: 10px 0 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .card-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-top: 12px; font-size: .95rem; }
 .card-facts > span { display: inline-flex; align-items: center; gap: 5px; }
-.price { font-weight: 800; }
+.price { font-weight: 800; white-space: nowrap; }
 .avail { color: #1E7A3A; font-weight: 700; }
 .avail::before { content: ""; width: 10px; height: 10px; background: currentColor; }
 .avail-off { color: var(--muted); }
@@ -324,6 +324,24 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
 .badge-withdrawn, .badge-rejected { background: #FBE5E1; color: #A12A1E; border-color: #A12A1E; --dot: #C0392B; }
 .badge-withdrawn::before, .badge-rejected::before { box-shadow: none; }
 
+/* ---------- Egyforma kártyák (felhasználói kérés): árnyék nélkül, a gombsor mindig a kártya alján ---------- */
+.card { box-shadow: none; }
+.sheet .card { box-shadow: var(--shadow); } /* a térképen kell a kiemelés */
+.card.hoverable:hover, .card-link:hover { transform: translateY(-3px); box-shadow: none; border-color: var(--cat, var(--accent)); }
+.card-list > .card { display: flex; flex-direction: column; height: 100%; }
+.card-list > .card > .card-actions { margin-top: auto; padding-top: 20px; }
+/* Fejléc: név+szakma balra (tördelődhet), a távolság fix oszlopban jobbra – sosem törik a név alá */
+.card-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 4px 16px; }
+.card-top > div { min-width: 0; }
+/* Ahol jobbra állapotcímke van (szolgáltatás, munka, jelentkező): a címke mindig felül, a cím alatta – minden kártyán ugyanígy */
+.card-top:has(> .badge) { display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 10px; }
+.card-top:has(> .badge) > div { width: 100%; flex: none; }
+/* Leírás: mindig 2 sornyi hely, akkor is, ha rövidebb */
+.card-desc { min-height: calc(2 * 1.55em); }
+/* Tény-sorok fix rendben: 1. sor település | ár, 2. sor elérhetőség (vagy állapot | idő) */
+.card-facts { display: grid; grid-template-columns: repeat(2, auto); justify-content: start; gap: 6px 18px; }
+.card-facts > .avail { grid-column: 1 / -1; }
+
 /* ---------- Mobil (≤768px): a menü vízszintesen görgethető második sor, 1 oszlop, teljes szélességű gombok ---------- */
 @media (max-width: 768px) {
   body { font-size: 17px; }
@@ -333,7 +351,9 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
   .site-header .container { flex-wrap: wrap; height: auto; gap: 0 12px; padding-top: 10px; }
   .logo { font-size: 1.25rem; }
   .header-cta { margin-left: auto; }
-  .btn-header { min-height: 42px; padding: 0 12px; font-size: .85rem; letter-spacing: 0; }
+  .header-cta { gap: 8px; }
+  .btn-header { min-height: 40px; padding: 0 10px; font-size: .78rem; letter-spacing: 0; }
+  .profile .avatar { width: 32px; height: 32px; font-size: .85rem; }
   .btn-header .icon { display: none; }
   .logo svg { width: 26px; height: 26px; }
   .main-nav { order: 3; width: 100%; height: 48px; overflow-x: auto; scrollbar-width: none; gap: 0; }
@@ -342,7 +362,7 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
   .main-nav a { padding: 0 12px; font-size: 1rem; }
   .icon-btn { width: 42px; height: 42px; }
   .profile-name, .caret { display: none; }
-  .profile summary { padding: 4px; }
+  .profile summary { padding: 3px; }
   .main-nav a { height: 40px; }
 
   /* body-szintű szelektor, hogy a téma (pl. B 3,4rem) nagy címét is felülírja */
@@ -352,7 +372,6 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
 
   .card-list, .grid-2, .form-row, .role-pick { grid-template-columns: 1fr; }
   .card { padding: 18px; }
-  .card-top { flex-wrap: wrap; }
   .trade-icon { width: 48px; height: 48px; }
   .card-main { gap: 12px; }
   .card-actions .btn, .modal-actions .btn { flex: 1; }
