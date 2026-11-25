@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesterek – FixMyHome</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="v2.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+</head>
+<body data-page="mesterek">
+<main class="v2-main">
+  <p class="kicker">01 / Mesterek</p>
+  <h1 class="huge">Szakember a&nbsp;közeledben.</h1>
+  <form class="search" id="search" role="search">
+    <div class="field"><label for="q-trade">Milyen mester kell?</label><select id="q-trade"></select></div>
+    <div class="field"><label for="q-town">Hol?</label><input id="q-town" value="Szabadka" list="towns" autocomplete="off"></div>
+    <datalist id="towns"><option>Szabadka</option><option>Palics</option><option>Zenta</option><option>Topolya</option><option>Magyarkanizsa</option><option>Újvidék</option></datalist>
+    <button class="bar-btn">Keresés</button>
+  </form>
+  <div class="split">
+    <div class="mlist"><div class="mlist-head"><span class="mono">Távolság szerint</span><span class="mono" id="mcount"></span></div><div id="mlist"></div></div>
+    <div class="mapbox"><div id="map" aria-label="Térkép"></div></div>
+  </div>
+</main>
+<script src="v2.js"></script>
+</body>
+</html>
