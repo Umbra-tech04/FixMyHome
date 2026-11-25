@@ -190,12 +190,16 @@ function renderHeader() {
   const r = role(), isAuth = document.body.dataset.auth !== undefined;
   const cur = PARENT[page] || page;
   const nav = isAuth ? '' : MENU[r].map(([h, t]) => `<a href="${h}"${h === cur ? ' aria-current="page"' : ''}>${t}</a>`).join('') + '<span class="nav-indicator" aria-hidden="true"></span>';
+  const me = r === 'mester' ? db.me.name : 'Bálint Erika';
+  const profile = `<details class="profile">
+      <summary><span class="avatar" aria-hidden="true">${esc(initials(me))}</span><span class="profile-name"><b>${esc(me)}</b><small>${r === 'mester' ? 'Mester' : 'Felhasználó'}</small></span><span class="caret" aria-hidden="true">▾</span></summary>
+      <div class="profile-menu">${r === 'mester' ? `<a href="alapadatok.html"${page === 'alapadatok.html' ? ' aria-current="page"' : ''}>${icon('user')}Alapadatok</a>` : ''}<a href="login.html">${icon('x')}Kilépés</a></div>
+    </details>`;
   const cta = isAuth ? ''
-    : r === 'user' ? `<a class="btn btn-header" href="hirdetes-uj.html"${page === 'hirdetes-uj.html' ? ' aria-current="page"' : ''}>${icon('plus')}Hirdetés feladása</a>`
-    : `<a class="icon-btn" href="alapadatok.html" title="Alapadatok" aria-label="Alapadatok"${page === 'alapadatok.html' ? ' aria-current="page"' : ''}>${icon('user')}</a>`;
+    : (r === 'user' ? `<a class="btn btn-header" href="hirdetes-uj.html"${page === 'hirdetes-uj.html' ? ' aria-current="page"' : ''}>${icon('plus')}Hirdetés feladása</a>` : '') + profile;
   document.body.insertAdjacentHTML('afterbegin', `
   <header class="site-header"><div class="container">
-    <a class="logo" href="${isAuth ? 'login.html' : HOME[r]}"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true">${ICONS.logo}</svg><span>FixMyHome</span></a>
+    <a class="logo" href="${isAuth ? 'login.html' : HOME[r]}"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true">${ICONS.logo}</svg><span>FixMy<b>Home</b></span></a>
     <nav class="main-nav" aria-label="Főmenü">${nav}</nav>
     <div class="header-cta">${cta}</div>
   </div></header>`);
@@ -205,7 +209,6 @@ function renderHeader() {
     <div class="row"><span>Szerep</span><div class="seg" role="group" aria-label="Szerepkör"><button data-role="user" aria-pressed="${r === 'user'}">Felhasználó</button><button data-role="mester" aria-pressed="${r === 'mester'}">Mester</button></div></div>
     <div class="row"><span>Téma</span><div class="seg" role="group" aria-label="Téma">${Object.keys(THEMES).map(k => `<button data-theme="${k}" aria-pressed="${k === theme}">${k.toUpperCase()} ${THEME_NAMES[k]}</button>`).join('')}</div></div>
     <button class="linklike" data-reset>Demóadatok visszaállítása</button>
-    <a href="login.html">Kilépés (belépő oldal)</a>
   </div></details>`);
 
   // Csúszó aktív aláhúzás: a jelenlegi menüpont alatt áll, hoverre odacsúszik.
@@ -217,6 +220,13 @@ function renderHeader() {
     links.forEach(a => a.addEventListener('mouseenter', () => move(a)));
     $('.main-nav').addEventListener('mouseleave', () => move(home));
     document.fonts?.ready.then(() => move(home));
+  }
+
+  // Profil-lenyíló: kattintás máshova vagy Esc bezárja.
+  const prof = $('.profile');
+  if (prof) {
+    document.addEventListener('click', e => { if (!prof.contains(e.target)) prof.open = false; });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') prof.open = false; });
   }
 
   $$('.seg [data-role]').forEach(b => b.onclick = () => {

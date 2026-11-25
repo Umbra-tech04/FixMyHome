@@ -215,8 +215,15 @@
     document.fonts?.ready.then(() => move(home));
   }
 
+  function initProfile() {
+    const prof = $('.profile');
+    if (!prof) return;
+    document.addEventListener('click', e => { if (!prof.contains(e.target)) prof.open = false; });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') prof.open = false; });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
-    initTheme(); initNav(); initMessages(); initGeolocate(); initMap(); initPreview(); initConfirm(); stagger();
+    initTheme(); initNav(); initProfile(); initMessages(); initGeolocate(); initMap(); initPreview(); initConfirm(); stagger();
   });
   window.FixMyHome = { toast, modal };
 })();
