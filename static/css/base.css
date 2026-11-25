@@ -341,6 +341,7 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
 /* Tény-sorok fix rendben: 1. sor település | ár, 2. sor elérhetőség (vagy állapot | idő) */
 .card-facts { display: grid; grid-template-columns: repeat(2, auto); justify-content: start; gap: 6px 18px; }
 .card-facts > .avail { grid-column: 1 / -1; }
+.card-facts > .badge { justify-self: start; }
 
 /* ---------- Mobil (≤768px): a menü vízszintesen görgethető második sor, 1 oszlop, teljes szélességű gombok ---------- */
 @media (max-width: 768px) {
