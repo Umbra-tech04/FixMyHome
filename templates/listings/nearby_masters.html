@@ -30,6 +30,7 @@
             <span class="avatar" aria-hidden="true">{{ profile.user.name|first }}</span>
             <strong>{{ profile.user.name }}</strong> · {{ profile.profession }} · {{ profile.service_area }}
             <span class="pill-distance">{{ profile.distance|floatformat:1 }} km</span>
+            <span class="rating-none">Még nincs értékelés</span>
           </li>
         {% endfor %}
       </ul>

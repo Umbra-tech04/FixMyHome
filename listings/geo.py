@@ -15,13 +15,37 @@ CITIES = {
     "Újvidék": (45.2671, 19.8335),
 }
 _CITIES_LOWER = {name.lower(): coords for name, coords in CITIES.items()}
+ZIP_CODES = {
+    "24000": "Szabadka", "24413": "Palics", "24400": "Zenta", "24300": "Topolya",
+    "24420": "Magyarkanizsa", "21220": "Óbecse", "25000": "Zombor", "21000": "Újvidék",
+}
 
 RADIUS_STEPS = (5, 10, 20, 50, 100)
 EARTH_RADIUS_KM = 6371.0088
 
 
-def city_coords(name):
-    return _CITIES_LOWER.get((name or "").strip().lower())
+def city_coords(text):
+    """Település, irányítószám vagy ezeket tartalmazó szöveg ("Szabadka és környéke", "24000") koordinátája."""
+    text = (text or "").strip().lower()
+    if not text:
+        return None
+    if text in _CITIES_LOWER:
+        return _CITIES_LOWER[text]
+    # TODO(shortcut): csak a CITIES települései és irányítószámai ismertek; tetszőleges címhez geokódoló kell (a frontend JS vagy Nominatim).
+    for name, coords in _CITIES_LOWER.items():
+        if name in text:
+            return coords
+    for zip_code, name in ZIP_CODES.items():
+        if zip_code in text:
+            return CITIES[name]
+    return None
+
+
+def master_coords(profile):
+    """A mester mentett koordinátája; ha nincs (pl. regisztráció után), a működési területből."""
+    if profile.latitude is not None and profile.longitude is not None:
+        return profile.latitude, profile.longitude
+    return city_coords(profile.service_area)
 
 
 def distance_km(lat1, lng1, lat2, lng2):
@@ -43,10 +67,13 @@ def _within(objects, lat, lng, radius_km):
 
 def nearby_masters(lat, lng, radius_km=None):
     """Az elérhető mesterek profiljai a körzeten belül, a legközelebbi elöl (`.distance` km-ben)."""
-    profiles = MasterProfile.objects.filter(
-        is_available=True, user__is_active=True, latitude__isnull=False, longitude__isnull=False,
-    ).select_related("user", "profession")
-    return _within(profiles, lat, lng, radius_km)
+    located = []
+    for profile in MasterProfile.objects.filter(is_available=True, user__is_active=True).select_related("user", "profession"):
+        coords = master_coords(profile)
+        if coords:
+            profile.latitude, profile.longitude = coords  # csak a memóriában, a térképnek
+            located.append(profile)
+    return _within(located, lat, lng, radius_km)
 
 
 def nearby_open_ads(lat, lng, radius_km, category):

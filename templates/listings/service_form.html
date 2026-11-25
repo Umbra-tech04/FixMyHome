@@ -7,7 +7,7 @@
     {% include "listings/_form_fields.html" %}
     {% include "listings/_cities_datalist.html" %}
     <div class="toolbar">
-      <button type="submit" class="btn btn-primary">Mentés</button>
+      <button type="submit" class="btn btn-primary">{% if service.pk %}Mentés{% else %}Közzététel{% endif %}</button>
       <a class="btn btn-secondary" href="{% url 'listings:service_list' %}">Mégse</a>
     </div>
   </form>

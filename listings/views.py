@@ -109,8 +109,9 @@ def _render_ad_detail(request, ad, application_form=None, status=200):
         )
     elif user.role == Role.MASTER:
         profile = MasterProfile.objects.filter(user=user).first()
-        if profile and None not in (profile.latitude, profile.longitude, ad.latitude, ad.longitude):
-            context["distance"] = geo.distance_km(profile.latitude, profile.longitude, ad.latitude, ad.longitude)
+        coords = profile and geo.master_coords(profile)
+        if coords and None not in (ad.latitude, ad.longitude):
+            context["distance"] = geo.distance_km(*coords, ad.latitude, ad.longitude)
         context.update(
             my_application=ad.applications.filter(master=user).first(),
             application_form=application_form or ApplicationForm(),
@@ -242,8 +243,9 @@ def master_ads(request):
     profile = MasterProfile.objects.filter(user=request.user).select_related("profession").first()
     radius = _radius(request, 20)
     ads = None
-    if profile and profile.latitude is not None and profile.longitude is not None:
-        ads = geo.nearby_open_ads(profile.latitude, profile.longitude, radius, profile.profession)
+    coords = profile and geo.master_coords(profile)
+    if coords:
+        ads = geo.nearby_open_ads(*coords, radius, profile.profession)
     return render(request, "listings/master_ads.html", {
         "profile": profile, "ads": ads, "radius": radius, "radius_choices": (10, 20, 50),
         "applied_ids": set(Application.objects.filter(master=request.user).values_list("ad_id", flat=True)),

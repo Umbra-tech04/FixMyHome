@@ -178,3 +178,18 @@ class ServiceCrudTests(TestCase):
         self.client.force_login(make_master("csaba@example.com"))
         self.assertEqual(self.client.post(reverse("listings:service_delete", args=[self.service.pk])).status_code, 404)
         self.assertTrue(ServiceListing.objects.exists())
+
+
+class LocationLookupTests(TestCase):
+    def test_city_lookup_accepts_zip_and_free_text(self):
+        from listings.geo import city_coords
+        self.assertEqual(city_coords("24000"), CITIES["Szabadka"])
+        self.assertEqual(city_coords("Szabadka és környéke"), CITIES["Szabadka"])
+        self.assertIsNone(city_coords("Atlantisz"))
+
+    def test_registered_master_without_coordinates_is_found_by_service_area(self):
+        user = make_user("uj@example.com", Role.MASTER)
+        MasterProfile.objects.create(
+            user=user, profession=Category.objects.get(name="Festő"), service_area="Palics és környéke", contact="x",
+        )
+        self.assertEqual([p.user for p in nearby_masters(*CITIES["Szabadka"], 10)], [user])

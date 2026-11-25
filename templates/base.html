@@ -53,17 +53,17 @@
   </header>
   <main>
     {% if messages %}
-      <ul role="status">
-        {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+      <ul class="messages" role="status">
+        {% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}
       </ul>
     {% endif %}
     {% block content %}{% endblock %}
   </main>
   <script>
-    // Natív megerősítés a [data-confirm] formokra; ha a fixmyhome.js saját modált ad, állítsa: window.FMH_CONFIRM = true.
+    // Natív megerősítés a [data-confirm] formokra, csak ha a fixmyhome.js (window.FixMyHome modálja) nem töltődött be.
     document.addEventListener("submit", function (event) {
       var text = event.target.dataset && event.target.dataset.confirm;
-      if (text && !window.FMH_CONFIRM && !window.confirm(text)) event.preventDefault();
+      if (text && !window.FixMyHome && !window.FMH_CONFIRM && !window.confirm(text)) event.preventDefault();
     });
   </script>
   <script src="{% static 'js/fixmyhome.js' %}" defer></script>
