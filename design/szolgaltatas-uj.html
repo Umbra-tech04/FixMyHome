@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Új szolgáltatás – FixMyHome</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" id="theme-css" href="themes/a-hivis.css">
+<script src="app.js"></script>
+</head>
+<body data-page="szolgaltatas-uj">
+<main class="container">
+  <a href="szolgaltatasaim.html" class="btn btn-ghost btn-sm" style="padding-left:0">← Szolgáltatásaim</a>
+  <h1 class="page-title">Új szolgáltatás</h1>
+  <p class="page-lead">Minden mező kötelező.</p>
+  <form id="service-form" class="form card" novalidate>
+    <div class="form-field"><label for="s-name">Megnevezés</label><input id="s-name" name="name" placeholder="Pl. Háztartási villanyszerelés" required data-msg="Add meg a szolgáltatás nevét."></div>
+    <div class="form-row">
+      <div class="form-field"><label for="s-trade">Szakma</label><select id="s-trade" name="trade" required data-msg="Válassz szakmát."></select></div>
+      <div class="form-field"><label for="s-price">Árkategória</label><select id="s-price" name="price" required data-msg="Válassz árkategóriát.">
+        <option value="">Válassz…</option><option>2000 din/órától</option><option>3000 din/órától</option><option>5000 din/órától</option><option>Fix ár, felmérés után</option><option>Megegyezés szerint</option></select></div>
+    </div>
+    <div class="form-field"><label for="s-desc">Leírás</label><textarea id="s-desc" name="desc" placeholder="Mit vállalsz pontosan?" required data-msg="Írd le, mit tartalmaz a szolgáltatás."></textarea></div>
+    <div class="form-field"><label for="s-area">Hol dolgozol?</label><input id="s-area" name="area" placeholder="Pl. Szabadka és 10 km" required data-msg="Add meg, hol vállalsz munkát."></div>
+    <div class="row"><button class="btn btn-primary" type="submit">Közzététel</button><a class="btn btn-secondary" href="szolgaltatasaim.html">Mégse</a></div>
+  </form>
+</main>
+
+</body>
+</html>

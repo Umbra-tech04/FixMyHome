@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Belépés – FixMyHome</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" id="theme-css" href="themes/a-hivis.css">
+<script src="app.js"></script>
+</head>
+<body data-page="login" data-auth>
+<main class="container auth">
+  <div class="card">
+    <h1 class="page-title">Belépés</h1>
+    <p class="page-lead">Szakember a környékeden – pár kattintásra.</p>
+    <form id="login-form" class="form" novalidate>
+      <div class="form-field"><label for="email">E-mail-cím</label><input id="email" name="email" type="email" autocomplete="email" required data-msg="Add meg az e-mail-címed." value="erika@pelda.rs"></div>
+      <div class="form-field"><label for="password">Jelszó</label><input id="password" name="password" type="password" autocomplete="current-password" required data-msg="Add meg a jelszavad."></div>
+      <p class="demo-hint">Demó: a helyes jelszó <b>demo</b> – bármi más hibaüzenetet mutat. A szerepkört fent váltod.</p>
+      <button class="btn btn-primary btn-block" type="submit">Belépés</button>
+      <p class="muted small" style="text-align:center;margin:0">Még nincs fiókod? <a href="register.html">Regisztrálj</a></p>
+    </form>
+  </div>
+</main>
+
+</body>
+</html>
