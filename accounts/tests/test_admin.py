@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
@@ -22,7 +23,6 @@ class UserAdminTests(TestCase):
         self.assertEqual(User.objects.count(), 2)
 
     def test_model_validation_rejects_case_only_duplicate_email(self):
-        from django.core.exceptions import ValidationError
         with self.assertRaises(ValidationError) as ctx:
             User(email="ANNA@Example.com", name="Anna 2").full_clean(exclude=["password"])
         self.assertIn("email", ctx.exception.message_dict)

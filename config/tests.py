@@ -1,5 +1,13 @@
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
 from django.test import TestCase
 from django.urls import reverse
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class HomePageTests(TestCase):
@@ -7,15 +15,6 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse("home"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "MesterKereső")
-
-
-import os
-import subprocess
-import sys
-import tempfile
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def load_settings(extra_env, dotenv_text=None):
