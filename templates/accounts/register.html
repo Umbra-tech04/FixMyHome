@@ -7,4 +7,23 @@
     {{ form.as_p }}
     <button type="submit">Regisztrálok</button>
   </form>
+  <p>Már van fiókod? <a href="{% url 'login' %}">Belépés</a></p>
+
+  <script>
+    // A mester-mezők csak a „Mester” szerepkörnél láthatók, kitölthetők és kötelezők.
+    (function () {
+      var role = document.getElementById("id_role");
+      var inputs = document.querySelectorAll("[data-master-only]");
+      function update() {
+        var isMaster = role.value === "master";
+        inputs.forEach(function (input) {
+          input.closest("p, div").hidden = !isMaster;
+          input.disabled = !isMaster;
+          input.required = isMaster;
+        });
+      }
+      role.addEventListener("change", update);
+      update();
+    })();
+  </script>
 {% endblock %}
