@@ -19,6 +19,8 @@ if not SECRET_KEY:
     SECRET_KEY = "dev-only-insecure-key-change-me"
 
 ALLOWED_HOSTS = [h for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h]
+# HTTPS-en át elérhető oldalnál (pl. alagút vagy hosting) a bejelentkezés/regisztráció POST-jaihoz kell.
+CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
