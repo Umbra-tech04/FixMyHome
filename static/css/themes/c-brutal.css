@@ -47,6 +47,7 @@ body { font-size: 17px; background-color: #E6E6E3;
 /* ---------- Óriási cím, soronként felcsúszik ---------- */
 .page-head { border-bottom: 4px solid #0B0B0B; padding-bottom: 28px; margin-bottom: 0; }
 .page-title { font-size: clamp(3.5rem, 7.5vw, 6rem); font-weight: 700; letter-spacing: -.055em; line-height: .9; text-transform: none; animation: title-up .8s var(--ease) both; }
+.auth .page-title { font-size: clamp(3rem, 6vw, 4.5rem); }  /* a keskeny belépés/regisztráció kártyába a 96px-es cím nem fér be */
 .page-lead { font-size: 1.15rem; color: #3A3A38; margin-top: 12px; }
 .page-lead::before { content: "→ "; font-family: var(--mono); }
 .eyebrow, .section-title, .seg button, .demo-panel summary { font-family: var(--mono); letter-spacing: .14em; text-transform: uppercase; }

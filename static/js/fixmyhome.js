@@ -15,7 +15,7 @@
 (() => {
   const KEY = 'fmh-theme';
   const THEMES = window.FMH_THEMES || {};
-  const theme = THEMES[localStorage.getItem(KEY)] ? localStorage.getItem(KEY) : (window.FMH_DEFAULT_THEME || 'a');
+  const theme = THEMES[localStorage.getItem(KEY)] ? localStorage.getItem(KEY) : (window.FMH_DEFAULT_THEME || 'c');
   window.FMH_CONFIRM = true; // a base.html natív confirm() fallbackja így nem kérdez másodszor
 
   const $ = (s, el = document) => el.querySelector(s);
