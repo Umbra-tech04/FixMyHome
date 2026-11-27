@@ -11,7 +11,7 @@ from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from dotenv import dotenv_values
 
-from config.security import DEV_SECRET_KEYS, env_bool, validate_secret_key
+from config.security import DEV_SECRET_KEYS, env_bool, env_int, validate_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Csak tesztekhez: hosszú, de nem titkos kulcs.
@@ -70,6 +70,27 @@ class EnvBoolTests(SimpleTestCase):
     def test_rejects_other_values(self):
         with mock.patch.dict(os.environ, {"FLAG": "yes"}), self.assertRaises(ImproperlyConfigured):
             env_bool("FLAG", False)
+
+
+class EnvIntTests(SimpleTestCase):
+    def test_missing_value_uses_default(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(env_int("NUM", 7, min_value=0), 7)
+
+    def test_reads_integer(self):
+        with mock.patch.dict(os.environ, {"NUM": " 42 "}):
+            self.assertEqual(env_int("NUM", 7, min_value=0), 42)
+
+    def test_rejects_non_integer(self):
+        for value in ("abc", "1.5", "1e3"):
+            with self.subTest(value=value), mock.patch.dict(os.environ, {"NUM": value}):
+                with self.assertRaisesMessage(ImproperlyConfigured, "NUM"):
+                    env_int("NUM", 7, min_value=0)
+
+    def test_rejects_value_below_minimum(self):
+        with mock.patch.dict(os.environ, {"NUM": "0"}):
+            with self.assertRaisesMessage(ImproperlyConfigured, "NUM"):
+                env_int("NUM", 7, min_value=1)
 
 
 TUNNEL_HOST = "pelda.trycloudflare.com"
@@ -189,6 +210,12 @@ class SettingsEnvironmentTests(TestCase):
         result = load_settings({"DEBUG": "0", "SECRET_KEY": STRONG_KEY, "SECURE_SSL_REDIRECT": "yes"})
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("SECURE_SSL_REDIRECT", result.stderr)
+
+    def test_invalid_hsts_seconds_stops_startup_with_clear_message(self):
+        result = load_settings({"DEBUG": "0", "SECRET_KEY": STRONG_KEY, "SECURE_HSTS_SECONDS": "egy óra"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ImproperlyConfigured", result.stderr)
+        self.assertIn("SECURE_HSTS_SECONDS", result.stderr)
 
     def test_allowed_hosts_and_csrf_origins_come_from_environment(self):
         result = load_settings(

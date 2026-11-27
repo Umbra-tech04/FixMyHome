@@ -3,3 +3,4 @@ Pillow
 dj-database-url
 psycopg[binary]
 python-dotenv
+django-axes==9.1.0
