@@ -2,8 +2,9 @@ import os
 from pathlib import Path
 
 import dj_database_url
-from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
+
+from config.security import validate_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -13,9 +14,8 @@ load_dotenv(os.environ.get("DOTENV_FILE", BASE_DIR / ".env"))
 DEBUG = os.environ.get("DEBUG", "0") == "1"
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "")
+validate_secret_key(SECRET_KEY, DEBUG)
 if not SECRET_KEY:
-    if not DEBUG:
-        raise ImproperlyConfigured("A SECRET_KEY környezeti változó kötelező, ha a DEBUG ki van kapcsolva.")
     SECRET_KEY = "dev-only-insecure-key-change-me"
 
 ALLOWED_HOSTS = [h for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h]
