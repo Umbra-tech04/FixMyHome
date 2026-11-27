@@ -1,14 +1,9 @@
 /* FixMyHome statikus prototípus – fejléc, szerepkör- és témaváltó, kamu adatok, oldal-interakciók.
    Minden állapot localStorage-ben van, így a kattintások túlélik az oldalváltást. "Demóadatok visszaállítása" a jobb alsó DEMO panelben. */
 
-const THEMES = { a: 'themes/a-hivis.css', b: 'themes/b-acel.css', c: 'themes/c-brutal.css' };
-const THEME_NAMES = { a: 'Építkezés', b: 'Acél', c: 'Brutál' };
-const LS = { theme: 'fmh-theme', role: 'fmh-role', db: 'fmh-db', jobs: 'fmh-munkak-szuro' };
+const LS = { role: 'fmh-role', db: 'fmh-db', jobs: 'fmh-munkak-szuro' };
 
 // Téma beállítása még renderelés előtt (a script a <head>-ben fut), hogy ne villanjon.
-const theme = THEMES[localStorage.getItem(LS.theme)] ? localStorage.getItem(LS.theme) : 'a';
-document.getElementById('theme-css').href = THEMES[theme];
-document.documentElement.dataset.theme = theme;
 
 /* ---------- Ikonok (inline SVG) ---------- */
 const ICONS = {
@@ -207,7 +202,6 @@ function renderHeader() {
   <footer class="site-footer"><div class="container">© 2026 FixMyHome · Vajdaság</div></footer>
   <details class="demo-panel"><summary>DEMO</summary><div class="demo-body">
     <div class="row"><span>Szerep</span><div class="seg" role="group" aria-label="Szerepkör"><button data-role="user" aria-pressed="${r === 'user'}">Felhasználó</button><button data-role="mester" aria-pressed="${r === 'mester'}">Mester</button></div></div>
-    <div class="row"><span>Téma</span><div class="seg" role="group" aria-label="Téma">${Object.keys(THEMES).map(k => `<button data-theme="${k}" aria-pressed="${k === theme}">${k.toUpperCase()} ${THEME_NAMES[k]}</button>`).join('')}</div></div>
     <button class="linklike" data-reset>Demóadatok visszaállítása</button>
   </div></details>`);
 
@@ -237,7 +231,6 @@ function renderHeader() {
     const ok = ROLE_PAGES[b.dataset.role].includes(page);
     location.href = ok ? location.href : HOME[b.dataset.role];
   });
-  $$('.seg [data-theme]').forEach(b => b.onclick = () => { localStorage.setItem(LS.theme, b.dataset.theme); location.reload(); });
   $('[data-reset]').onclick = () => { localStorage.removeItem(LS.db); localStorage.removeItem(LS.jobs); location.reload(); };
 }
 

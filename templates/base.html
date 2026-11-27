@@ -7,19 +7,8 @@
   <link rel="stylesheet" href="{% static 'vendor/fonts.css' %}">{# helyi betűk: net nélkül is működik #}
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
-  <link rel="stylesheet" id="theme-css" href="{% static 'css/themes/c-brutal.css' %}">{# JS nélkül ez a téma; a JS az FMH_DEFAULT_THEME-et használja #}
+  <link rel="stylesheet" href="{% static 'css/themes/c-brutal.css' %}">
   <link rel="stylesheet" href="{% static 'css/django.css' %}">
-  <script>
-    // Téma még az első rajzolás előtt (ugyanaz a localStorage-kulcs, mint a design/app.js-ben), hogy ne villanjon.
-    window.FMH_THEMES = { b: "{% static 'css/themes/b-acel.css' %}", c: "{% static 'css/themes/c-brutal.css' %}" };
-    window.FMH_DEFAULT_THEME = "c";  // az alapértelmezett téma: egyetlen helyen kell átírni
-    (function () {
-      var theme = localStorage.getItem("fmh-theme");
-      if (!window.FMH_THEMES[theme]) theme = window.FMH_DEFAULT_THEME;
-      document.getElementById("theme-css").href = window.FMH_THEMES[theme];
-      document.documentElement.dataset.theme = theme;
-    })();
-  </script>
   {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -67,9 +56,6 @@
   </main>
 
   <footer class="site-footer"><div class="container">© 2026 FixMyHome · Vajdaság</div></footer>
-  <details class="demo-panel"><summary>DEMO</summary><div class="demo-body">
-    <div class="row"><span>Téma</span><div class="seg" role="group" aria-label="Téma"><button type="button" data-theme="b" aria-pressed="false">B Acél</button><button type="button" data-theme="c" aria-pressed="true">C Brutál</button></div></div>
-  </div></details>
 
   <script>
     // Natív megerősítés a [data-confirm] formokra, csak ha a fixmyhome.js saját modálja nem töltődött be.

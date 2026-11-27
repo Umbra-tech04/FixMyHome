@@ -50,7 +50,7 @@ body { font-size: 17px; background-color: #E6E6E3;
 .auth .page-title { font-size: clamp(3rem, 6vw, 4.5rem); }  /* a keskeny belépés/regisztráció kártyába a 96px-es cím nem fér be */
 .page-lead { font-size: 1.15rem; color: #3A3A38; margin-top: 12px; }
 .page-lead::before { content: "→ "; font-family: var(--mono); }
-.eyebrow, .section-title, .seg button, .demo-panel summary { font-family: var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.eyebrow, .section-title { font-family: var(--mono); letter-spacing: .14em; text-transform: uppercase; }
 .eyebrow { font-size: .75rem; color: #0B0B0B; }
 .section-title { font-size: .9rem; font-weight: 700; padding: 14px 0; margin: 48px 0 0; border-top: 4px solid #0B0B0B; border-bottom: 1px solid #0B0B0B; }
 main.container > .page-head + * { margin-top: 32px; }
@@ -147,7 +147,6 @@ dialog.modal { border: 2px solid #0B0B0B; box-shadow: none; }
 .modal-actions { border-top: 1px solid #0B0B0B; padding-top: 20px; }
 .toast { background: #0B0B0B; color: #D4FF3A; box-shadow: none; border: 0; font-family: var(--mono); font-size: .85rem; letter-spacing: .04em; }
 .toast .icon { color: #D4FF3A; }
-.demo-panel { box-shadow: none; border-width: 1px; }
 .demo-hint { border-left-color: #0B0B0B; background: #FFFFFF; font-family: var(--mono); font-size: .78rem; }
 .site-footer { font-family: var(--mono); font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; border-top: 4px solid #0B0B0B; }
 
