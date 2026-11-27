@@ -4,3 +4,5 @@ dj-database-url
 psycopg[binary]
 python-dotenv
 django-axes==9.1.0
+disposable-email-domains==0.0.293
+phonenumbers==9.0.43

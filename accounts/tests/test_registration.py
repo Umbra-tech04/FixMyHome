@@ -124,7 +124,7 @@ class RegistrationRestrictionTests(TestCase):
                 self.assertEqual(User.objects.count(), 0)
 
     def test_common_phone_formats_are_accepted(self):
-        for index, good in enumerate(("+381 60 111 222", "060/111-222", "(021) 123 456", "+36 30 123 4567")):
+        for index, good in enumerate(("+381 60 111 222", "060/111-222", "(021) 456 789", "+36 30 123 4567")):
             with self.subTest(phone=good):
                 response = self.client.post(self.url, valid_data(email=f"p{index}@example.com", phone=good))
                 self.assertEqual(response.status_code, 302)
@@ -144,3 +144,57 @@ class RegistrationRestrictionTests(TestCase):
 
         response = self.client.get(self.url)
         self.assertContains(response, password_validators_help_text_html(), html=True)
+
+
+class RegistrationValidationTests(TestCase):
+    url = reverse("register")
+
+    def assert_field_error(self, field, **overrides):
+        response = self.client.post(self.url, valid_data(**overrides))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(field, response.context["form"].errors)
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_email_is_trimmed_and_lowercased(self):
+        self.client.post(self.url, valid_data(email="  Anna@Example.COM "))
+        self.assertTrue(User.objects.filter(email="anna@example.com").exists())
+
+    def test_strict_email_rules_apply(self):
+        for email in ("valaki@localhost", "a@[127.0.0.1]", "x@mailinator.com", "x@tempmail.com"):
+            with self.subTest(email=email):
+                self.assert_field_error("email", email=email)
+
+    def test_disposable_email_message_is_shown(self):
+        response = self.client.post(self.url, valid_data(email="x@yopmail.com"))
+        self.assertContains(response, "Eldobható e-mail-cím nem használható")
+
+    def test_phone_is_stored_in_e164(self):
+        self.client.post(self.url, valid_data(phone="064/123-4567"))
+        self.assertEqual(User.objects.get().phone, "+381641234567")
+
+    def test_fake_phone_numbers_are_rejected(self):
+        for phone in ("123456", "asdf", "+381 60 abc 123"):
+            with self.subTest(phone=phone):
+                self.assert_field_error("phone", phone=phone)
+
+    def test_names_with_digits_or_markup_are_rejected(self):
+        for name in ("Anna2", "<b>Anna</b>", "anna@x.hu", "A."):
+            with self.subTest(name=name):
+                self.assert_field_error("name", name=name)
+
+    def test_unicode_name_is_accepted(self):
+        response = self.client.post(self.url, valid_data(name="Đorđe O'Neil-Petrović"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_master_fields_reject_angle_brackets(self):
+        for field in ("service_area", "contact"):
+            with self.subTest(field=field):
+                response = self.client.post(self.url, master_data(**{field: "<script>x</script>"}))
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(field, response.context["form"].errors)
+                self.assertEqual(User.objects.count(), 0)
+
+    def test_master_fields_are_trimmed(self):
+        self.client.post(self.url, master_data(service_area="  Szabadka  ", contact="  +381 60 222 333 "))
+        profile = MasterProfile.objects.get()
+        self.assertEqual((profile.service_area, profile.contact), ("Szabadka", "+381 60 222 333"))

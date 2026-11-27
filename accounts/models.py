@@ -1,5 +1,8 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.exceptions import ValidationError
 from django.db import models
+
+from accounts.validators import normalize_name, normalize_phone, validate_email_address, validate_name, validate_phone
 
 
 class Role(models.TextChoices):
@@ -36,9 +39,10 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser):
     username = None
-    email = models.EmailField("e-mail", unique=True)
-    name = models.CharField("név", max_length=150)
-    phone = models.CharField("telefon", max_length=30, blank=True)
+    email = models.EmailField("e-mail", unique=True, validators=[validate_email_address])
+    name = models.CharField("név", max_length=150, validators=[validate_name])
+    # Új adat E.164 alakban (+381641234567); a régi adatokat nem alakítjuk át, csak a következő mentéskor.
+    phone = models.CharField("telefon", max_length=30, blank=True, validators=[validate_phone])
     role = models.CharField("szerepkör", max_length=20, choices=Role.choices, default=Role.USER)
 
     USERNAME_FIELD = "email"
@@ -49,6 +53,12 @@ class User(AbstractUser):
     def clean(self):
         super().clean()
         self.email = self.email.strip().lower()
+        self.name = normalize_name(self.name)
+        if self.phone:
+            try:
+                self.phone = normalize_phone(self.phone)
+            except ValidationError:
+                pass  # a mezőhibát a validate_phone már jelentette
 
     def save(self, *args, **kwargs):
         self.email = self.email.strip().lower()
