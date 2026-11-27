@@ -4,7 +4,7 @@ from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
 
-from config.security import env_bool, validate_secret_key
+from config.security import env_bool, env_int, validate_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -99,7 +99,7 @@ SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = False if DEBUG else env_bool("SECURE_SSL_REDIRECT", True)
-SECURE_HSTS_SECONDS = 0 if DEBUG else int(os.environ.get("SECURE_HSTS_SECONDS", "3600"))
+SECURE_HSTS_SECONDS = 0 if DEBUG else env_int("SECURE_HSTS_SECONDS", 3600, min_value=0)
 # Csak proxy/alagút mögött kapcsold be: proxy nélkül a kliens hamisíthatja az X-Forwarded-Proto fejlécet.
 # Proxy mögött viszont kell, különben SECURE_SSL_REDIRECT=1 mellett végtelen átirányítás lesz.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if env_bool("TRUST_PROXY_SSL_HEADER", False) else None

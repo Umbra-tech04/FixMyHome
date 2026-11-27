@@ -23,6 +23,20 @@ def env_bool(name: str, default: bool) -> bool:
     return value == "1"
 
 
+def env_int(name: str, default: int, min_value: int) -> int:
+    """Read a whole-number environment value; invalid or too small values are a configuration error."""
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return default
+    try:
+        number = int(value)
+    except ValueError:
+        raise ImproperlyConfigured(f"A(z) {name} értéke egész szám legyen.") from None
+    if number < min_value:
+        raise ImproperlyConfigured(f"A(z) {name} értéke legalább {min_value} legyen.")
+    return number
+
+
 def validate_secret_key(key: str, debug: bool) -> None:
     """Raise ImproperlyConfigured if DEBUG is off and the key is missing or weak.
 
