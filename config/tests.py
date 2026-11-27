@@ -5,15 +5,21 @@ import tempfile
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
-from django.test import SimpleTestCase, TestCase
+from unittest import mock
+
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from dotenv import dotenv_values
 
-from config.security import DEV_SECRET_KEYS, validate_secret_key
+from config.security import DEV_SECRET_KEYS, env_bool, validate_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Csak tesztekhez: hosszú, de nem titkos kulcs.
 STRONG_KEY = "test-only-" + "x1y2z3" * 10
+HTTPS_EXPR = (
+    "s.SESSION_COOKIE_SECURE, s.CSRF_COOKIE_SECURE, s.SECURE_SSL_REDIRECT,"
+    " s.SECURE_HSTS_SECONDS, getattr(s, 'SECURE_PROXY_SSL_HEADER', None)"
+)
 
 
 class ValidateSecretKeyTests(SimpleTestCase):
@@ -48,6 +54,63 @@ class ValidateSecretKeyTests(SimpleTestCase):
     def test_env_example_key_is_listed_as_development_key(self):
         values = dotenv_values(BASE_DIR / ".env.example")
         self.assertIn(values["SECRET_KEY"], DEV_SECRET_KEYS)
+
+
+class EnvBoolTests(SimpleTestCase):
+    def test_missing_value_uses_default(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertTrue(env_bool("FLAG", True))
+            self.assertFalse(env_bool("FLAG", False))
+
+    def test_accepts_one_and_zero(self):
+        with mock.patch.dict(os.environ, {"ON": "1", "OFF": "0"}):
+            self.assertTrue(env_bool("ON", False))
+            self.assertFalse(env_bool("OFF", True))
+
+    def test_rejects_other_values(self):
+        with mock.patch.dict(os.environ, {"FLAG": "yes"}), self.assertRaises(ImproperlyConfigured):
+            env_bool("FLAG", False)
+
+
+TUNNEL_HOST = "pelda.trycloudflare.com"
+TUNNEL_ORIGIN = f"https://{TUNNEL_HOST}"
+
+
+@override_settings(ALLOWED_HOSTS=[TUNNEL_HOST], CSRF_TRUSTED_ORIGINS=[], SECURE_SSL_REDIRECT=True)
+class BehindTunnelTests(TestCase):
+    """The tunnel talks plain HTTP to Django; the visitor's browser uses HTTPS."""
+
+    def get_login(self, client, **headers):
+        return client.get(reverse("login"), headers={"host": TUNNEL_HOST, **headers})
+
+    def test_without_trusted_proxy_header_ssl_redirect_loops(self):
+        response = self.get_login(self.client, x_forwarded_proto="https")
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response["Location"], f"{TUNNEL_ORIGIN}{reverse('login')}")
+
+    @override_settings(SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO", "https"))
+    def test_with_trusted_proxy_header_page_loads(self):
+        self.assertEqual(self.get_login(self.client, x_forwarded_proto="https").status_code, 200)
+
+    def post_login(self, **headers):
+        client = Client(enforce_csrf_checks=True)
+        token = self.get_login(client, **headers).context["csrf_token"]
+        return client.post(
+            reverse("login"), {"csrfmiddlewaretoken": token, "username": "x@example.com", "password": "x"},
+            headers={"host": TUNNEL_HOST, "origin": TUNNEL_ORIGIN, "referer": f"{TUNNEL_ORIGIN}/", **headers},
+        )
+
+    @override_settings(SECURE_SSL_REDIRECT=False)
+    def test_csrf_fails_without_trusted_origin_or_proxy_header(self):
+        self.assertEqual(self.post_login().status_code, 403)
+
+    @override_settings(SECURE_SSL_REDIRECT=False, CSRF_TRUSTED_ORIGINS=[TUNNEL_ORIGIN])
+    def test_csrf_passes_with_exact_trusted_origin(self):
+        self.assertEqual(self.post_login().status_code, 200)
+
+    @override_settings(SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO", "https"))
+    def test_csrf_passes_with_trusted_proxy_header(self):
+        self.assertEqual(self.post_login(x_forwarded_proto="https").status_code, 200)
 
 
 class HomePageTests(TestCase):
@@ -95,6 +158,37 @@ class SettingsEnvironmentTests(TestCase):
         result = load_settings({"DEBUG": "0", "SECRET_KEY": STRONG_KEY}, expr="s.DEBUG")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "False")
+
+    def test_https_settings_are_off_in_debug_mode(self):
+        result = load_settings({"DEBUG": "1"}, expr=HTTPS_EXPR)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "False False False 0 None")
+
+    def test_https_settings_default_to_secure_when_debug_is_off(self):
+        result = load_settings({"DEBUG": "0", "SECRET_KEY": STRONG_KEY}, expr=HTTPS_EXPR)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "True True True 3600 None")
+
+    def test_ssl_redirect_and_hsts_can_be_set_from_environment(self):
+        result = load_settings(
+            {"DEBUG": "0", "SECRET_KEY": STRONG_KEY, "SECURE_SSL_REDIRECT": "0", "SECURE_HSTS_SECONDS": "0"},
+            expr=HTTPS_EXPR,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "True True False 0 None")
+
+    def test_proxy_ssl_header_is_trusted_only_when_enabled(self):
+        result = load_settings(
+            {"DEBUG": "0", "SECRET_KEY": STRONG_KEY, "TRUST_PROXY_SSL_HEADER": "1"},
+            expr="s.SECURE_PROXY_SSL_HEADER",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "('HTTP_X_FORWARDED_PROTO', 'https')")
+
+    def test_invalid_boolean_env_value_stops_startup(self):
+        result = load_settings({"DEBUG": "0", "SECRET_KEY": STRONG_KEY, "SECURE_SSL_REDIRECT": "yes"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SECURE_SSL_REDIRECT", result.stderr)
 
     def test_allowed_hosts_and_csrf_origins_come_from_environment(self):
         result = load_settings(

@@ -1,5 +1,7 @@
 """Small, settings-independent helpers for production safety checks."""
 
+import os
+
 from django.core.exceptions import ImproperlyConfigured
 
 MIN_SECRET_KEY_LENGTH = 50
@@ -9,6 +11,16 @@ DEV_SECRET_KEYS = frozenset({
     "csak-fejlesztesi-kulcs",  # .env.example
     "dev-only-insecure-key-change-me",  # settings.py fallback in DEBUG mode
 })
+
+
+def env_bool(name: str, default: bool) -> bool:
+    """Read a "1"/"0" environment flag; anything else is a configuration error."""
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return default
+    if value not in ("0", "1"):
+        raise ImproperlyConfigured(f"A(z) {name} értéke csak 1 vagy 0 lehet.")
+    return value == "1"
 
 
 def validate_secret_key(key: str, debug: bool) -> None:
