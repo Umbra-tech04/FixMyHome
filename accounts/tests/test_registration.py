@@ -1,6 +1,9 @@
+from unittest import mock
+
 from django.test import TestCase
 from django.urls import reverse
 
+from accounts.forms import RegistrationForm
 from accounts.models import MasterProfile, Role, User
 from listings.models import Category
 
@@ -124,7 +127,7 @@ class RegistrationRestrictionTests(TestCase):
                 self.assertEqual(User.objects.count(), 0)
 
     def test_common_phone_formats_are_accepted(self):
-        for index, good in enumerate(("+381 60 111 222", "060/111-222", "(021) 123 456", "+36 30 123 4567")):
+        for index, good in enumerate(("+381 60 111 222", "060/111-222", "(021) 456 789", "+36 30 123 4567")):
             with self.subTest(phone=good):
                 response = self.client.post(self.url, valid_data(email=f"p{index}@example.com", phone=good))
                 self.assertEqual(response.status_code, 302)
@@ -144,3 +147,105 @@ class RegistrationRestrictionTests(TestCase):
 
         response = self.client.get(self.url)
         self.assertContains(response, password_validators_help_text_html(), html=True)
+
+
+class RegistrationValidationTests(TestCase):
+    url = reverse("register")
+
+    def assert_field_error(self, field, **overrides):
+        response = self.client.post(self.url, valid_data(**overrides))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(field, response.context["form"].errors)
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_email_is_trimmed_and_lowercased(self):
+        self.client.post(self.url, valid_data(email="  Anna@Example.COM "))
+        self.assertTrue(User.objects.filter(email="anna@example.com").exists())
+
+    def test_strict_email_rules_apply(self):
+        for email in ("valaki@localhost", "a@[127.0.0.1]", "x@mailinator.com", "x@tempmail.com"):
+            with self.subTest(email=email):
+                self.assert_field_error("email", email=email)
+
+    def test_disposable_email_message_is_shown(self):
+        response = self.client.post(self.url, valid_data(email="x@yopmail.com"))
+        self.assertContains(response, "Eldobható e-mail-cím nem használható")
+
+    def test_phone_is_stored_in_e164(self):
+        self.client.post(self.url, valid_data(phone="064/123-4567"))
+        self.assertEqual(User.objects.get().phone, "+381641234567")
+
+    def test_fake_phone_numbers_are_rejected(self):
+        for phone in ("123456", "asdf", "+381 60 abc 123"):
+            with self.subTest(phone=phone):
+                self.assert_field_error("phone", phone=phone)
+
+    def test_names_with_digits_or_markup_are_rejected(self):
+        for name in ("Anna2", "<b>Anna</b>", "anna@x.hu", "A."):
+            with self.subTest(name=name):
+                self.assert_field_error("name", name=name)
+
+    def test_unicode_name_is_accepted(self):
+        response = self.client.post(self.url, valid_data(name="Đorđe O'Neil-Petrović"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_master_fields_reject_angle_brackets(self):
+        for field in ("service_area", "contact"):
+            with self.subTest(field=field):
+                response = self.client.post(self.url, master_data(**{field: "<script>x</script>"}))
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(field, response.context["form"].errors)
+                self.assertEqual(User.objects.count(), 0)
+
+    def test_master_fields_are_trimmed(self):
+        self.client.post(self.url, master_data(service_area="  Szabadka  ", contact="  +381 60 222 333 "))
+        profile = MasterProfile.objects.get()
+        self.assertEqual((profile.service_area, profile.contact), ("Szabadka", "+381 60 222 333"))
+
+
+class PasswordSimilarityTests(TestCase):
+    """The similarity check must see the new user's e-mail, name and phone."""
+
+    def password_error_codes(self, **overrides):
+        form = RegistrationForm(valid_data(**overrides))
+        self.assertFalse(form.is_valid())
+        return [error.code for error in form.errors.as_data().get("password1", [])]
+
+    def test_password_similar_to_email_is_rejected(self):
+        codes = self.password_error_codes(email="kovacs.janos@x.hu", password1="kovacsjanos", password2="kovacsjanos")
+        self.assertIn("password_too_similar", codes)
+
+    def test_password_similar_to_name_is_rejected(self):
+        codes = self.password_error_codes(name="Teodor Lazarevic", password1="teodorlazarevic", password2="teodorlazarevic")
+        self.assertIn("password_too_similar", codes)
+
+    def test_password_similar_to_phone_is_rejected(self):
+        codes = self.password_error_codes(phone="+381641234567", password1="tel381641234567", password2="tel381641234567")
+        self.assertIn("password_too_similar", codes)
+
+    def test_unrelated_password_is_accepted(self):
+        form = RegistrationForm(valid_data(email="kovacs.janos@x.hu", name="Kovács János"))
+        self.assertTrue(form.is_valid(), form.errors)
+
+
+class DuplicateEmailRaceTests(TestCase):
+    """Two registrations with the same e-mail at the same time: the second gets a form error, not a 500."""
+
+    url = reverse("register")
+
+    def test_form_save_turns_integrity_error_into_form_error(self):
+        form = RegistrationForm(valid_data())
+        self.assertTrue(form.is_valid(), form.errors)
+        User.objects.create_user(email="anna@example.com", password=PASSWORD, name="Anna")  # the other request wins
+        self.assertIsNone(form.save())
+        self.assertEqual(form.errors["email"], ["Ezzel az e-mail-címmel már van fiók."])
+        self.assertEqual(User.objects.count(), 1)
+
+    def test_view_shows_same_message_instead_of_500(self):
+        User.objects.create_user(email="anna@example.com", password=PASSWORD, name="Anna")
+        # Skip the pre-check, as if both requests passed it before either was saved.
+        with mock.patch.object(RegistrationForm, "clean_email", lambda form: form.cleaned_data["email"].lower()):
+            response = self.client.post(self.url, valid_data())
+        self.assertContains(response, "Ezzel az e-mail-címmel már van fiók.")
+        self.assertEqual(User.objects.count(), 1)
+        self.assertNotIn("_auth_user_id", self.client.session)

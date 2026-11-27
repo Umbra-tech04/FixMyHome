@@ -54,6 +54,15 @@ TRUST_PROXY_SSL_HEADER=1
 
 Ellenőrzés indítás előtt: `python manage.py check --deploy`. Csak a `security.W005` és a `security.W021` maradhat (HSTS `includeSubDomains` és `preload`): ezeket szándékosan nem kapcsoljuk be, mert nem a mi kezünkben van a teljes domain.
 
+## Regisztráció: adatellenőrzés
+
+A szabályok az `accounts/validators.py`-ban vannak; a regisztrációs űrlap és az admin (a `User` modell mezői) is ezeket használja.
+
+- **E-mail:** levágott szóközök, kisbetű, max. 254 karakter; a domainben kell pont (a `valaki@localhost` és az IP-címes domain nem megy át). Eldobható címek tiltva a [`disposable-email-domains`](https://github.com/disposable-email-domains/disposable-email-domains) csomag listája és az `EXTRA_DISPOSABLE_DOMAINS` saját lista alapján (aldomainekkel együtt). Új domaint az utóbbiba lehet felvenni.
+- **Telefon:** a `phonenumbers` csomag ellenőrzi; alapértelmezett régió Szerbia (`RS`), nemzetközi előhívóval bármely ország. Csak érvényes szám megy át, és E.164 alakban (`+381641234567`) mentjük. A régi adatokat nem írjuk át: az adminban egy régi formátumú számot mentéskor javítani kell, ilyenkor E.164-re alakul.
+- **Név:** 2–150 karakter, betűk (ékezetekkel is), szóköz, kötőjel, aposztróf és pont; a többszörös szóközöket összevonjuk.
+- **Jelszó:** nem lehet túl hasonló az e-mail-címhez, a névhez vagy a telefonszámhoz.
+
 ## Jelszótippelés elleni védelem
 
 A `/belepes/` és az `/admin/` belépést a [django-axes](https://django-axes.readthedocs.io/) védi:
