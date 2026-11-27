@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{% if service.pk %}Szolgáltatás szerkesztése{% else %}Új szolgáltatás{% endif %}{% endblock %}
+{% block content %}
+  <div class="page-head"><div>
+    <p class="eyebrow"><a href="{% url 'listings:service_list' %}">← Szolgáltatásaim</a></p>
+    <h1 class="page-title">{% if service.pk %}Szolgáltatás szerkesztése{% else %}Új szolgáltatás{% endif %}</h1>
+    <p class="page-lead">Írd le, mit vállalsz és mennyiért. Minden mező kötelező.</p>
+  </div></div>
+  <form method="post" class="form" novalidate>
+    {% csrf_token %}
+    {% include "listings/_hidden_errors.html" %}
+    {% include "listings/_field.html" with field=form.title %}
+    <div class="form-row">
+      {% include "listings/_field.html" with field=form.category %}
+      {% include "listings/_field.html" with field=form.price_category %}
+    </div>
+    {% include "listings/_field.html" with field=form.description %}
+    {% include "listings/_field.html" with field=form.service_area %}
+    {% include "listings/_cities_datalist.html" %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">{% if service.pk %}Mentés{% else %}Közzététel{% endif %}</button>
+      <a class="btn btn-ghost" href="{% url 'listings:service_list' %}">Mégse</a>
+    </div>
+  </form>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load fmh %}
+{% block title %}Munkáim{% endblock %}
+{% block content %}
+  <div class="page-head"><div><h1 class="page-title">Munkáim</h1><p class="page-lead">Azok a munkák, amelyekre a hirdető téged választott.</p></div></div>
+  <div class="tabs" role="group" aria-label="Szűrés állapot szerint">
+    {% for key, label in filters %}<a href="?allapot={{ key }}"{% if key == selected %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
+  </div>
+  {% if jobs %}
+    <ul class="card-list one-col">
+      {% for ad in jobs %}
+        <li class="card hoverable cat-{{ ad.category.name|slugify }}">
+          <div class="card-main">
+            <span class="trade-icon" aria-hidden="true">{% icon ad.category.name %}</span>
+            <div>
+              <div class="card-top">
+                <div><h3><a href="{% url 'listings:ad_detail' ad.pk %}">{{ ad.title }}</a></h3><span class="trade-label">{{ ad.category }}</span></div>
+                {% include "listings/_ad_badge.html" %}
+              </div>
+              <p class="card-desc">{{ ad.description }}</p>
+              <div class="card-facts">
+                <span>{% icon "user" %} {{ ad.owner.name }}</span>
+                <span>{% icon "pin" %} {{ ad.location_text }}</span>
+                <span class="muted">{% icon "calendar" %} Még nincs időpont</span>
+              </div>
+            </div>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">
+      {% icon "inbox" %}
+      <h3>Nincs ilyen munkád</h3>
+      <p>{% if selected == "closed" %}Még egy munkát sem zártak le.{% else %}Jelentkezz a környékbeli hirdetésekre, és itt látod az elvállalt munkákat.{% endif %}</p>
+      <a class="btn btn-secondary" href="{% url 'listings:master_ads' %}">Hirdetések böngészése</a>
+    </div>
+  {% endif %}
+{% endblock %}

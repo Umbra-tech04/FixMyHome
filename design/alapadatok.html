@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alapadatok – FixMyHome</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" id="theme-css" href="themes/a-hivis.css">
+<script src="app.js"></script>
+</head>
+<body data-page="alapadatok">
+<main class="container">
+  <div class="page-head"><div><h1 class="page-title">Alapadatok</h1><p class="page-lead">Ezek alapján látod a környékbeli hirdetéseket, és így találnak meg az ügyfelek.</p></div></div>
+  <form id="profile-form" class="form" novalidate>
+    <div class="form-field">
+      <label class="toggle"><input type="checkbox" name="available"><span class="track"></span>Most elérhető vagyok</label>
+      <span class="hint" id="avail-text"></span>
+    </div>
+    <fieldset class="form-field"><legend>Szakma</legend><div class="row" id="trade-chips" style="gap:8px"></div><span class="hint">Többet is választhatsz.</span></fieldset>
+    <div class="form-field"><label for="p-town">Település</label><select id="p-town" name="town" required></select></div>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Mentés</button></div>
+  </form>
+</main>
+</body>
+</html>

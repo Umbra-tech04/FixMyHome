@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load fmh %}
+{% block title %}Hirdetések a környéken{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Hirdetések a környéken</h1>
+      <p class="page-lead">{% if profile %}{{ profile.profession }} · {{ profile.service_area }} · {{ radius|floatformat:"0" }} km-en belül, a legközelebbi elöl.{% else %}Add meg a szakmádat és a településedet, és megmutatjuk a neked szóló munkákat.{% endif %}</p>
+    </div>
+    <a class="btn btn-ghost" href="{% url 'listings:master_profile' %}">Szakma módosítása</a>
+  </div>
+  {% if ads is None %}
+    <div class="empty-state">
+      {% icon "pin" %}
+      <h3>Hiányzik a szakmád vagy a településed</h3>
+      <p>Ezek nélkül nem tudjuk, mely hirdetések szólnak neked.</p>
+      <a class="btn btn-secondary" href="{% url 'listings:master_profile' %}">Alapadatok megadása</a>
+    </div>
+  {% else %}
+    <div class="tabs" role="group" aria-label="Körzet">
+      {% for r in radius_choices %}<a href="?r={{ r }}"{% if r == radius %} aria-current="true"{% endif %}>{{ r }} km</a>{% endfor %}
+    </div>
+    {% if ads %}
+      <ul class="card-list">
+        {% for ad in ads %}
+          <li class="card hoverable cat-{{ ad.category.name|slugify }}">
+            <div class="card-main">
+              <span class="trade-icon" aria-hidden="true">{% icon ad.category.name %}</span>
+              <div>
+                <div class="card-top">
+                  <div><h3>{{ ad.title }}</h3><span class="trade-label">{{ ad.category }}</span></div>
+                  <span class="pill-distance">{{ ad.distance|floatformat:1 }}<small>km</small></span>
+                </div>
+                <p class="card-desc">{{ ad.description }}</p>
+                <div class="card-facts">
+                  {% include "listings/_ad_badge.html" %}{% if ad.pk in applied_ids %}<span class="badge badge-pending">Jelentkeztél</span>{% endif %}
+                  <span>{% icon "pin" %} {{ ad.location_text }}</span>
+                  <span>{% icon "clock" %} {{ ad.created_at|timesince }} ezelőtt</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-actions"><a class="btn btn-secondary btn-sm" href="{% url 'listings:ad_detail' ad.pk %}">Megnézem</a></div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state">
+        {% icon "inbox" %}
+        <h3>Nincs nyitott hirdetés a környéken</h3>
+        <p>{{ radius|floatformat:"0" }} km-en belül most senki nem keres a szakmádban.</p>
+        {% if radius < 50 %}<a class="btn btn-secondary" href="?r=50">Keresés 50 km-en belül</a>{% endif %}
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load fmh %}
+{% block title %}Hirdetéseim{% endblock %}
+{% block content %}
+  <div class="page-head"><div><h1 class="page-title">Hirdetéseim</h1><p class="page-lead">Itt látod a jelentkezőket, és itt választod ki a mestert.</p></div></div>
+  {% if ads %}
+    <ul class="card-list">
+      {% for ad in ads %}
+        <li class="card hoverable cat-{{ ad.category.name|slugify }}">
+          <div class="card-main">
+            <span class="trade-icon" aria-hidden="true">{% icon ad.category.name %}</span>
+            <div>
+              <div class="card-top">
+                <div><h3>{{ ad.title }}</h3><span class="trade-label">{{ ad.category }}</span></div>
+                {% include "listings/_ad_badge.html" %}
+              </div>
+              <p class="card-desc">{{ ad.description }}</p>
+              <div class="card-facts">
+                <span>{% icon "pin" %} {{ ad.location_text }}</span>
+                <span>{% icon "clock" %} {{ ad.created_at|timesince }} ezelőtt</span>
+                <span>{% icon "user" %} {{ ad.application_count }} jelentkező</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-actions"><a class="btn btn-secondary btn-sm" href="{% url 'listings:ad_detail' ad.pk %}">Megnézem</a></div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">
+      {% icon "inbox" %}
+      <h3>Még nincs hirdetésed</h3>
+      <p>Írd le, mi a gond, és a közeli mesterek jelentkeznek rá.</p>
+      <a class="btn btn-secondary" href="{% url 'listings:ad_create' %}">Hirdetés feladása</a>
+    </div>
+  {% endif %}
+{% endblock %}

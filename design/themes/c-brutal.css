@@ -1,0 +1,158 @@
+/* C téma – „Brutál”: modern brutalista. Betonszürke #E6E6E3, szinte fekete #0B0B0B, középszürke, fehér felületek,
+   egyetlen savas lime accent #D4FF3A – csak fekete felületeken. Space Grotesk (óriási címek) + JetBrains Mono (címkék, számok).
+   Látható rács, összeérő 1px-es keretek, nincs árnyék, nincs lekerekítés, nincs színátmenet. Ugyanaz a markup, mint A/B. */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+
+:root {
+  --ink: #0B0B0B; --accent: #D4FF3A; --accent-ink: #0B0B0B;
+  --bg: #E6E6E3; --surface: #FFFFFF;
+  --muted: #5E5E5A;            /* a #8A8A86 a betonszürkén túl halvány a folyó szöveghez; ez olvasható */
+  --line: #8A8A86;
+  --sh: 0px; --shadow: none; --shadow-hover: none;
+  --font: 'Space Grotesk', system-ui, sans-serif; --font-head: 'Space Grotesk', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --focus: 0 0 0 2px #fff, 0 0 0 5px #0B0B0B;
+}
+
+/* Nyers, látható rács a háttérben */
+body { font-size: 17px; background-color: #E6E6E3;
+  background-image: linear-gradient(to right, rgba(11,11,11,.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(11,11,11,.07) 1px, transparent 1px);
+  background-size: 48px 48px; }
+
+/* ---------- Fejléc: tömör fekete sáv + szakma-ticker ---------- */
+.site-header { background: #0B0B0B; border-bottom: 4px solid #0B0B0B; }
+.logo { font-weight: 700; letter-spacing: -.04em; font-size: 1.5rem; }
+.logo b { color: #D4FF3A; }
+.main-nav { counter-reset: nav; gap: 0; }
+.main-nav a { font: 500 .8rem var(--mono); letter-spacing: .14em; text-transform: uppercase; height: 76px; padding: 0 18px; opacity: 1; color: #E6E6E3; border-left: 1px solid #2A2A2A; }
+.main-nav a:last-of-type { border-right: 1px solid #2A2A2A; }
+.main-nav a::before { counter-increment: nav; content: "0" counter(nav) " / "; color: #8A8A86; margin-right: 4px; }
+.main-nav a:hover { background: #1A1A1A; }
+.main-nav a[aria-current="page"] { background: #D4FF3A; color: #0B0B0B; }
+.main-nav a[aria-current="page"]::before { color: #0B0B0B; }
+.nav-indicator { display: none; } /* a lime cella jelöli az aktív pontot */
+.site-header::after { content: "VILLANYSZERELŐ ● VÍZSZERELŐ ● FESTŐ ● ASZTALOS ● BURKOLÓ ● LAKATOS ● VILLANYSZERELŐ ● VÍZSZERELŐ ● FESTŐ ● ASZTALOS ● BURKOLÓ ● LAKATOS ● VILLANYSZERELŐ ● VÍZSZERELŐ ● FESTŐ ● ASZTALOS ● BURKOLÓ ● LAKATOS ● VILLANYSZERELŐ ● VÍZSZERELŐ ● FESTŐ ● ASZTALOS ● BURKOLÓ ● LAKATOS";
+  display: block; overflow: hidden; white-space: nowrap; padding: 6px 0; border-top: 1px solid #2A2A2A; color: #8A8A86; font: 500 .7rem var(--mono); letter-spacing: .2em; animation: ticker 70s linear infinite; }
+@keyframes ticker { from { text-indent: 0; } to { text-indent: -1600px; } }
+.btn-header { background: #D4FF3A; color: #0B0B0B; border-color: #D4FF3A; box-shadow: none; }
+.btn-header:hover { background: #FFFFFF; border-color: #FFFFFF; box-shadow: none; }
+.profile summary { border: 1px solid #3A3A3A; box-shadow: none; }
+.profile summary:hover { transform: none; box-shadow: none; background: #1A1A1A; }
+.profile summary:active { transform: none; }
+.profile .avatar { background: #D4FF3A; color: #0B0B0B; border-color: #D4FF3A; font-family: var(--mono); }
+.profile-name small { font-family: var(--mono); color: #D4FF3A; opacity: 1; }
+.profile-menu { border: 2px solid #0B0B0B; box-shadow: none; }
+.profile-menu a, .profile-menu button { font: 500 .85rem var(--mono); text-transform: uppercase; letter-spacing: .1em; }
+.profile-menu a:hover, .profile-menu button:hover, .profile-menu a[aria-current="page"] { background: #0B0B0B; color: #D4FF3A; }
+
+/* ---------- Óriási cím, soronként felcsúszik ---------- */
+.page-head { border-bottom: 4px solid #0B0B0B; padding-bottom: 28px; margin-bottom: 0; }
+.page-title { font-size: clamp(3.5rem, 7.5vw, 6rem); font-weight: 700; letter-spacing: -.055em; line-height: .9; text-transform: none; animation: title-up .8s var(--ease) both; }
+.page-lead { font-size: 1.15rem; color: #3A3A38; margin-top: 12px; }
+.page-lead::before { content: "→ "; font-family: var(--mono); }
+.eyebrow, .section-title, .seg button, .demo-panel summary { font-family: var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.eyebrow { font-size: .75rem; color: #0B0B0B; }
+.section-title { font-size: .9rem; font-weight: 700; padding: 14px 0; margin: 48px 0 0; border-top: 4px solid #0B0B0B; border-bottom: 1px solid #0B0B0B; }
+main.container > .page-head + * { margin-top: 32px; }
+@keyframes title-up { from { opacity: 0; transform: translateY(.35em); clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* ---------- Gombok: fekete téglalap, lime szöveg, nyíl; hoverkor azonnal invertál ---------- */
+.btn { border: 2px solid #0B0B0B; box-shadow: none; font: 700 .82rem var(--mono); letter-spacing: .12em; text-transform: uppercase; transition: background 0s, color 0s; min-height: 52px; }
+.btn:hover { transform: none; box-shadow: none; }
+.btn:active { transform: translateY(2px); box-shadow: none; }
+.btn-primary { background: #0B0B0B; color: #D4FF3A; }
+.btn-primary::after { content: "→"; font-size: 1.1em; transition: transform .2s var(--ease); }
+.btn-primary:hover { background: #D4FF3A; color: #0B0B0B; }
+.btn-primary:hover::after { transform: translateX(4px); }
+.btn-secondary { background: transparent; color: #0B0B0B; border-width: 1px; }
+.btn-secondary:hover { background: #0B0B0B; color: #FFFFFF; }
+.btn-danger { background: #0B0B0B; color: #FFFFFF; }
+.btn-danger:hover { background: #FFFFFF; color: #0B0B0B; }
+.btn-ghost { border-color: transparent; font-weight: 500; }
+.btn-ghost:hover { background: none; color: #0B0B0B; }
+.btn[disabled] { background: #C8C8C4; color: #6E6E6A; border-color: #C8C8C4; }
+
+/* ---------- Kártyák: táblázatszerű rács, összeérő 1px-es keretek ---------- */
+.card { border: 1px solid #0B0B0B; box-shadow: none; padding: 28px; }
+.card-list { gap: 0; padding: 1px 0 0 1px; }
+/* Összeérő keretek: minden kártyának teljes 1px kerete van, a -1px margó egybeolvasztja a szomszédosakat (üres cellánál nincs kósza vonal) */
+.card-list > .card { border: 1px solid #0B0B0B; margin: -1px 0 0 -1px; position: relative; }
+/* Szakma: a --cat csak egy vastag felső csík (és a címke előtti kis négyzet) */
+.card[class*="cat-"] { border-left-width: 1px; border-left-color: #0B0B0B; box-shadow: inset 0 6px 0 var(--cat, #0B0B0B); }
+.card-list > .card::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 8px; background: #D4FF3A; border-top: 1px solid #0B0B0B; transform: scaleX(0); transform-origin: left; transition: transform .35s var(--ease); }
+.card.hoverable:hover, .card-link:hover { transform: none; border-color: #0B0B0B; background: #FAFAF8; }
+.card-list > .card:hover::after { transform: scaleX(1); }
+.card h3 { font-size: 1.5rem; font-weight: 700; letter-spacing: -.03em; line-height: 1.05; }
+.trade-icon { background: #0B0B0B; color: #D4FF3A; border: 0; box-shadow: none; width: 56px; height: 56px; }
+.card:hover .trade-icon { transform: translateY(-3px); }
+.trade-label { border: 0; background: none; padding: 0; color: #0B0B0B; font: 700 .72rem var(--mono); letter-spacing: .14em; display: inline-flex; align-items: center; gap: 8px; }
+.trade-label::before { content: ""; width: 10px; height: 10px; background: var(--cat, #0B0B0B); }
+.pill-distance { font: 700 3.2rem/0.9 var(--font-head); letter-spacing: -.06em; }
+.pill-distance small { font: 500 .75rem var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #5E5E5A; }
+.card-desc { color: #3A3A38; }
+.card-facts, .card-sub { font: 500 .8rem var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+.price { font-weight: 800; }
+.rating-none { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: #5E5E5A; }
+.avail { color: #0B0B0B; }
+.avail::before { background: #D4FF3A; outline: 1px solid #0B0B0B; }
+.avail-off { color: #5E5E5A; }
+.avail-off::before { background: transparent; }
+.card .icon { stroke-width: 1.75; }
+
+/* ---------- Állapotcímkék: mono, fekete keretes, a Nyitott lime pöttyel ---------- */
+.badge, .badge-open, .badge-accepted, .badge-progress, .badge-closed, .badge-pending, .badge-withdrawn, .badge-rejected {
+  background: transparent; color: #0B0B0B; border: 1px solid #0B0B0B; font: 700 .7rem var(--mono); letter-spacing: .14em; }
+.badge::before { outline: 1px solid #0B0B0B; box-shadow: none; }
+.badge-open, .badge-accepted { --dot: #D4FF3A; }
+.badge-progress { --dot: #0B0B0B; }
+.badge-closed, .badge-pending { --dot: #8A8A86; color: #3A3A38; }
+.badge-withdrawn, .badge-rejected { --dot: transparent; color: #5E5E5A; border-color: #8A8A86; text-decoration: line-through; }
+.badge-withdrawn::before, .badge-rejected::before { outline-color: #8A8A86; }
+
+/* ---------- Szűrők, fülek, űrlap ---------- */
+.tabs { border-bottom: 1px solid #0B0B0B; gap: 0; }
+.tabs button, .tabs a { font: 500 .78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: #3A3A38; border-right: 1px solid #C8C8C4; }
+.tabs button::after, .tabs a::after { display: none; }
+.tabs [aria-pressed="true"], .tabs [aria-current="true"] { background: #0B0B0B; color: #D4FF3A; }
+.chip { font: 500 .78rem var(--mono); letter-spacing: .1em; text-transform: uppercase; border-width: 1px; background: transparent; }
+.chip:hover { background: #FFFFFF; }
+.chip[aria-pressed="true"], .chip[aria-current="true"], .chip:has(input:checked) { background: #0B0B0B; color: #D4FF3A; border-color: #0B0B0B; }
+.toolbar .divider { background: #0B0B0B; width: 1px; }
+.form-field label, .form-field legend, .form-field .label { font: 700 .75rem var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.form-field input:not([type=checkbox]):not([type=radio]):not([type=file]), .form-field select, .form-field textarea { border-width: 1px; }
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus { box-shadow: none; outline: 3px solid #0B0B0B; outline-offset: -1px; }
+.field-error, .form-alert { font-family: var(--mono); font-size: .8rem; letter-spacing: .04em; }
+.toggle input:checked + .track { background: #0B0B0B; }
+.toggle input:checked + .track::after { background: #D4FF3A; }
+.role-pick label { border-width: 1px; }
+.role-pick label:hover { transform: none; box-shadow: none; background: #FAFAF8; }
+.role-pick label:has(input:checked) { background: #0B0B0B; color: #D4FF3A; box-shadow: none; }
+.dropzone { border-width: 1px; font-family: var(--mono); font-size: .85rem; }
+
+/* ---------- Egyebek ---------- */
+.stepper li { font-family: var(--mono); font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; }
+.stepper li::before { border-width: 1px; border-color: #0B0B0B; font-family: var(--mono); }
+.stepper li.current::before { background: #0B0B0B; color: #D4FF3A; animation: none; }
+.stepper li.done::before { background: #0B0B0B; color: #FFFFFF; }
+.empty-state { border: 1px dashed #0B0B0B; }
+.empty-state h3 { font-size: 2rem; letter-spacing: -.04em; }
+.map-wrap { border: 1px solid #0B0B0B; box-shadow: none; }
+.map-pin { background: #0B0B0B; border-color: #D4FF3A; box-shadow: none; }
+.map-pin span { color: #D4FF3A; font-family: var(--mono); }
+.map-pin.active { background: #D4FF3A; border-color: #0B0B0B; } .map-pin.active span { color: #0B0B0B; }
+.map-me { background: #D4FF3A; border-color: #0B0B0B; }
+.sheet .card { box-shadow: none; border: 2px solid #0B0B0B; }
+dialog.modal { border: 2px solid #0B0B0B; box-shadow: none; }
+.modal-body h2 { font-size: 2rem; letter-spacing: -.04em; }
+.modal-actions { border-top: 1px solid #0B0B0B; padding-top: 20px; }
+.toast { background: #0B0B0B; color: #D4FF3A; box-shadow: none; border: 0; font-family: var(--mono); font-size: .85rem; letter-spacing: .04em; }
+.toast .icon { color: #D4FF3A; }
+.demo-panel { box-shadow: none; border-width: 1px; }
+.demo-hint { border-left-color: #0B0B0B; background: #FFFFFF; font-family: var(--mono); font-size: .78rem; }
+.site-footer { font-family: var(--mono); font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; border-top: 4px solid #0B0B0B; }
+
+@media (max-width: 768px) {
+  body .page-title { font-size: 3rem; }
+  .main-nav a { height: 48px; padding: 0 12px; font-size: .72rem; }
+  .pill-distance { font-size: 2.4rem; }
+}

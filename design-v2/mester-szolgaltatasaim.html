@@ -1,0 +1,40 @@
+<!doctype html><html lang="hu"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="v2.css?v=20261125b">
+<link rel="stylesheet" href="mester.css?v=20261125b">
+<title>Szolgáltatásaim – FixMyHome V2</title></head><body data-page="mester-szolgaltatasaim">
+<main class="v2-main">
+  <p class="m-eyebrow">Mester · Amit meghirdetsz</p>
+  <h1 class="m-title">Szolgáltatásaim</h1>
+  <div class="svc-layout">
+    <section aria-labelledby="svc-count"><p class="svc-count mono" id="svc-count" aria-live="polite"></p><ol class="svc-list" id="svc-list"></ol></section>
+    <aside class="svc-panel" aria-labelledby="svc-form-title">
+      <form id="svc-form" novalidate>
+        <h2 id="svc-form-title">ÚJ SZOLGÁLTATÁS</h2>
+        <div class="field"><label for="s-name">Megnevezés</label><input id="s-name" name="name" placeholder="Pl. Háztartási villanyszerelés" data-msg="Add meg a szolgáltatás nevét."></div>
+        <fieldset class="field svc-trades"><legend class="label">Szakma</legend><div class="tiles" id="trade-tiles"></div></fieldset>
+        <div class="field"><label for="s-desc">Leírás</label><textarea id="s-desc" name="desc" placeholder="Mit vállalsz pontosan?" data-msg="Írd le, mit tartalmaz a szolgáltatás."></textarea></div>
+        <div class="field svc-price">
+          <label for="s-price">Ár</label>
+          <div class="price-input"><input id="s-price" name="price" inputmode="numeric" autocomplete="off" placeholder="3 500" aria-describedby="price-preview"><span class="price-cur" aria-hidden="true">DIN</span></div>
+          <div class="seg-units" role="radiogroup" aria-label="Mire vonatkozik az ár">
+            <label><input type="radio" name="unit" value="hour" checked><span>/ ÓRA</span></label>
+            <label><input type="radio" name="unit" value="m2"><span>/ M²</span></label>
+            <label><input type="radio" name="unit" value="visit"><span>/ ALKALOM</span></label>
+            <label><input type="radio" name="unit" value="job"><span>/ MUNKA</span></label>
+          </div>
+          <label class="from-toggle"><input type="checkbox" name="from"><span class="knob" aria-hidden="true"></span>-TÓL <small>(legalább ennyi)</small></label>
+          <p class="price-preview" id="price-preview" aria-live="polite"></p>
+        </div>
+        <div class="field"><label for="s-area">Hol dolgozol?</label><input id="s-area" name="area" placeholder="Pl. Szabadka és 10 km" data-msg="Add meg, hol vállalsz munkát."></div>
+        <button class="bar-btn" type="submit" id="svc-submit">KÖZZÉTÉTEL</button>
+        <button class="link-arrow svc-cancel" type="button" id="svc-cancel" hidden>MÉGSE, ÚJ SZOLGÁLTATÁS</button>
+      </form>
+    </aside>
+  </div>
+</main>
+<script src="v2.js?v=20261125b"></script>
+<script src="mester.js?v=20261125b"></script>
+</body></html>

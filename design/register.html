@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regisztráció – FixMyHome</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" id="theme-css" href="themes/a-hivis.css">
+<script src="app.js"></script>
+</head>
+<body data-page="register" data-auth>
+<main class="container auth">
+  <div class="card">
+    <div class="page-head"><div><h1 class="page-title">Regisztráció</h1><p class="page-lead">Válaszd ki, mire használod a FixMyHome-ot.</p></div></div>
+    <form id="register-form" class="form" novalidate>
+      <fieldset class="form-field"><legend class="sr-only">Szerepkör</legend>
+        <div class="role-pick">
+          <label><input type="radio" name="role" value="user" required><strong>Mestert keresek</strong><span class="muted small">Otthoni munkára keresek szakembert.</span></label>
+          <label><input type="radio" name="role" value="mester"><strong>Mester vagyok</strong><span class="muted small">Munkát vállalok a környéken.</span></label>
+        </div>
+      </fieldset>
+      <div class="form-field"><label for="name">Teljes név</label><input id="name" name="name" autocomplete="name" required data-msg="Add meg a neved."></div>
+      <div class="form-field"><label for="r-email">E-mail-cím</label><input id="r-email" name="email" type="email" autocomplete="email" required data-msg="Add meg az e-mail-címed."></div>
+      <div class="form-row">
+        <div class="form-field"><label for="r-pass">Jelszó</label><input id="r-pass" name="password" type="password" autocomplete="new-password" required data-msg="Adj meg egy jelszót."></div>
+        <div class="form-field"><label for="r-town">Település</label><select id="r-town" name="town" required data-msg="Válassz települést."><option value="">Válassz…</option><option>Szabadka</option><option>Zenta</option><option>Topolya</option><option>Magyarkanizsa</option><option>Újvidék</option></select></div>
+      </div>
+      <div class="form-field" id="trade-field" hidden><label for="r-trade">Szakma</label><select id="r-trade" name="trade" required data-msg="Válaszd ki a szakmád."><option value="">Válassz…</option><option>Villanyszerelő</option><option>Vízszerelő</option><option>Festő</option><option>Asztalos</option><option>Burkoló</option><option>Lakatos</option></select></div>
+      <button class="btn btn-primary btn-block" type="submit">Regisztrálok</button>
+      <p class="muted small" style="text-align:center;margin:0">Van már fiókod? <a href="login.html">Lépj be</a></p>
+    </form>
+  </div>
+</main>
+</body>
+</html>

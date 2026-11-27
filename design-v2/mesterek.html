@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesterek – FixMyHome</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="v2.css?v=20261125b">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=20261125b">
+<script src="vendor/leaflet/leaflet.js?v=20261125b"></script>
+</head>
+<body data-page="mesterek">
+<main class="v2-main">
+  <p class="kicker">01 / Mesterek</p>
+  <h1 class="huge">Szakember a&nbsp;közeledben</h1>
+  <form class="search" id="search" role="search">
+    <div class="field"><label for="q-trade">Milyen mester kell?</label><button type="button" class="dd-btn" id="q-trade" aria-haspopup="listbox">Bármilyen</button></div>
+    <div class="field"><label for="q-town">Hol?</label><div class="dd-input"><input id="q-town" value="Szabadka" autocomplete="off" spellcheck="false" placeholder="Település"><button type="button" class="dd-toggle" id="q-town-toggle" aria-label="Teljes városlista" tabindex="-1"></button></div></div>
+    <button class="bar-btn">Keresés</button>
+  </form>
+  <div class="split">
+    <div class="mlist"><div class="mlist-head"><span class="mono">Távolság szerint</span><span class="mono" id="mcount"></span></div><div id="mlist"></div></div>
+    <div class="mapbox"><div id="map" aria-label="Térkép"></div></div>
+  </div>
+</main>
+<script src="v2.js?v=20261125b"></script>
+</body>
+</html>

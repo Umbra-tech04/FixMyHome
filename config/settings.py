@@ -90,6 +90,10 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Az OSM-csempeszerver Referer nélkül 403-at ad (tile usage policy); a Django alapértéke, a "same-origin", nem küld Referert más domainre.
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

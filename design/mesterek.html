@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesterek a közelben – FixMyHome</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" id="theme-css" href="themes/a-hivis.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="app.js"></script>
+</head>
+<body data-page="mesterek">
+<main class="container">
+  <div class="page-head"><div><h1 class="page-title">Mesterek a közelben</h1><p class="page-lead">Add meg, hol vagy, és válaszd ki, milyen szakember kell.</p></div></div>
+  <div class="toolbar">
+    <button class="btn btn-primary" id="locate-btn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Hol vagyok?</button>
+    <form id="where-form" class="row" role="search">
+      <div class="form-field"><label for="where-input" class="sr-only">Település vagy irányítószám</label><input id="where-input" placeholder="vagy írd be: település / irsz." list="towns"></div>
+      <datalist id="towns"><option>Szabadka</option><option>Palics</option><option>Zenta</option><option>Topolya</option><option>Magyarkanizsa</option><option>Újvidék</option></datalist>
+      <button class="btn btn-secondary">Keresés</button>
+    </form>
+    <span class="divider" aria-hidden="true"></span>
+    <div class="row" role="group" aria-label="Körzet" style="gap:0">
+      <button class="chip" data-radius="5" aria-pressed="true">5 km</button><button class="chip" data-radius="10" aria-pressed="false" style="margin-left:-2px">10 km</button><button class="chip" data-radius="20" aria-pressed="false" style="margin-left:-2px">20 km</button>
+    </div>
+    <span class="spacer"></span>
+    <div class="row" role="group" aria-label="Nézet" style="gap:0">
+      <button class="chip" data-view="list" aria-pressed="true">Lista</button><button class="chip" data-view="map" aria-pressed="false" style="margin-left:-2px">Térkép</button>
+    </div>
+  </div>
+  <div class="tabs" id="cat-tabs" role="group" aria-label="Szakma"></div>
+  <p class="muted" id="result-count" aria-live="polite"></p>
+  <div data-view-panel="list"><ul class="card-list" id="mester-list"></ul></div>
+  <div data-view-panel="map" hidden>
+    <div class="map-wrap"><div id="map"></div>
+      <div class="sheet" id="sheet"><button class="btn btn-ghost sheet-close" id="sheet-close" aria-label="Bezárás">✕</button><div id="sheet-body"></div></div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

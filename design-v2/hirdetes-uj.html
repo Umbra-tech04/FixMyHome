@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hirdetés feladása – FixMyHome</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="v2.css?v=20261125b">
+</head>
+<body data-page="hirdetes-uj">
+<main class="v2-main">
+  <p class="kicker">Új hirdetés</p>
+  <h1 class="huge">Mi a gond otthon?</h1>
+  <form id="ad-form" class="compose" novalidate>
+    <div>
+      <section class="sec"><span class="sec-no">01</span><div><h2>Mi a gond?</h2>
+        <div class="field" data-err="title"><label for="title">Cím</label><input id="title" name="title" maxlength="90" placeholder="Pl. Csöpög a konyhai csap"></div>
+        <div class="field" data-err="desc"><label for="desc">Leírás</label><textarea id="desc" name="desc" placeholder="Mióta, hol, mekkora a munka? Minden részlet segít."></textarea></div>
+      </div></section>
+      <section class="sec"><span class="sec-no">02</span><div><h2>Milyen szakember?</h2>
+        <div class="field" data-err="cat"><span class="label">Válassz egyet</span><div class="tiles" id="tiles" role="group" aria-label="Szakma"></div></div>
+      </div></section>
+      <section class="sec"><span class="sec-no">03</span><div><h2>Hol?</h2>
+        <div class="field" data-err="town"><span class="label">Település</span><div class="towns" id="towns" role="group" aria-label="Település"></div></div>
+      </div></section>
+      <section class="sec"><span class="sec-no">04</span><div><h2>Képek <span class="mono muted">nem kötelező</span></h2>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Képek feltöltése"><span><strong>Húzd ide a képeket</strong><span class="mono muted">vagy kattints a tallózáshoz</span></span></div>
+        <input type="file" name="images" accept="image/*" multiple hidden>
+        <div class="thumbs" id="thumbs"></div>
+      </div></section>
+    </div>
+    <div class="preview-col">
+      <div class="preview-label"><span class="mono">Élő előnézet</span><span class="mono" style="color:var(--lime)">● így látják a mesterek</span></div>
+      <div class="preview" id="preview" aria-live="polite"></div>
+      <button class="bar-btn" type="submit">Közzététel</button>
+    </div>
+  </form>
+</main>
+<script src="v2.js?v=20261125b"></script>
+</body>
+</html>

@@ -65,6 +65,7 @@ class MasterProfile(models.Model):
     contact = models.CharField("elérhetőség", max_length=200)
     latitude = models.FloatField("szélesség", null=True, blank=True)
     longitude = models.FloatField("hosszúság", null=True, blank=True)
+    is_available = models.BooleanField("most elérhető", default=True)
 
     def __str__(self):
         return f"{self.user} ({self.profession})"
