@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
+from accounts.forms import RegistrationForm
 from accounts.models import MasterProfile, Role, User
 from listings.models import Category
 
@@ -198,3 +199,28 @@ class RegistrationValidationTests(TestCase):
         self.client.post(self.url, master_data(service_area="  Szabadka  ", contact="  +381 60 222 333 "))
         profile = MasterProfile.objects.get()
         self.assertEqual((profile.service_area, profile.contact), ("Szabadka", "+381 60 222 333"))
+
+
+class PasswordSimilarityTests(TestCase):
+    """The similarity check must see the new user's e-mail, name and phone."""
+
+    def password_error_codes(self, **overrides):
+        form = RegistrationForm(valid_data(**overrides))
+        self.assertFalse(form.is_valid())
+        return [error.code for error in form.errors.as_data().get("password1", [])]
+
+    def test_password_similar_to_email_is_rejected(self):
+        codes = self.password_error_codes(email="kovacs.janos@x.hu", password1="kovacsjanos", password2="kovacsjanos")
+        self.assertIn("password_too_similar", codes)
+
+    def test_password_similar_to_name_is_rejected(self):
+        codes = self.password_error_codes(name="Teodor Lazarevic", password1="teodorlazarevic", password2="teodorlazarevic")
+        self.assertIn("password_too_similar", codes)
+
+    def test_password_similar_to_phone_is_rejected(self):
+        codes = self.password_error_codes(phone="+381641234567", password1="tel381641234567", password2="tel381641234567")
+        self.assertIn("password_too_similar", codes)
+
+    def test_unrelated_password_is_accepted(self):
+        form = RegistrationForm(valid_data(email="kovacs.janos@x.hu", name="Kovács János"))
+        self.assertTrue(form.is_valid(), form.errors)

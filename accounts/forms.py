@@ -64,7 +64,11 @@ class RegistrationForm(forms.Form):
             self.add_error("password2", "A két jelszó nem egyezik.")
         elif password1:
             try:
-                validate_password(password1)
+                # Unsaved user, so the similarity check can compare against e-mail, name and phone.
+                candidate = User(
+                    email=cleaned.get("email", ""), name=cleaned.get("name", ""), phone=cleaned.get("phone", ""),
+                )
+                validate_password(password1, user=candidate)
             except ValidationError as error:
                 self.add_error("password1", error)
         is_master = cleaned.get("role") == Role.MASTER
