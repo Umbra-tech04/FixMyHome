@@ -133,7 +133,7 @@ main.container > :nth-child(2) { animation-delay: .06s; } main.container > :nth-
 /* ---------- Űrlap ---------- */
 .form { display: grid; gap: 22px; max-width: 680px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-.form-field { display: grid; gap: 8px; }
+.form-field { display: grid; gap: 8px; align-content: start; }
 .form-field label, .form-field legend, .form-field .label { font-weight: 800; }
 .form-field .hint { color: var(--muted); font-size: .85rem; }
 .form-field input:not([type=checkbox]):not([type=radio]):not([type=file]), .form-field select, .form-field textarea {

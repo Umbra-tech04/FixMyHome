@@ -34,4 +34,16 @@
       <p class="muted small" style="text-align:center;margin:0">Van már fiókod? <a href="{% url 'login' %}">Lépj be</a></p>
     </form>
   </div>
+  <script>
+    // Felhasználónál a rejtett mester-mezők ne küldődjenek el, különben a szerver hibát adna rájuk.
+    (function () {
+      var form = document.getElementById("register-form");
+      function update() {
+        var isUser = !!form.querySelector('input[name="role"][value="user"]:checked');
+        form.querySelectorAll("[data-master-only]").forEach(function (input) { input.disabled = isUser; });
+      }
+      form.addEventListener("change", update);
+      update();
+    })();
+  </script>
 {% endblock %}

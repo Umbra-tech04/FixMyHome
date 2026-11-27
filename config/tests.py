@@ -1,5 +1,13 @@
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
 from django.test import TestCase
 from django.urls import reverse
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class HomePageTests(TestCase):
@@ -9,16 +17,7 @@ class HomePageTests(TestCase):
         self.assertContains(response, "MesterKereső")
 
 
-import os
-import subprocess
-import sys
-import tempfile
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-def load_settings(extra_env, dotenv_text=None):
+def load_settings(extra_env, dotenv_text=None, expr="s.DEBUG, s.SECRET_KEY"):
     """Betölti a beállításokat külön folyamatban, tiszta környezettel."""
     with tempfile.TemporaryDirectory() as tmp:
         dotenv = Path(tmp) / ".env"
@@ -26,7 +25,7 @@ def load_settings(extra_env, dotenv_text=None):
             dotenv.write_text(dotenv_text)
         env = {"PATH": os.environ["PATH"], "DOTENV_FILE": str(dotenv), **extra_env}
         return subprocess.run(
-            [sys.executable, "-c", "import config.settings as s; print(s.DEBUG, s.SECRET_KEY)"],
+            [sys.executable, "-c", f"import config.settings as s; print({expr})"],
             cwd=BASE_DIR, env=env, capture_output=True, text=True,
         )
 
@@ -46,3 +45,15 @@ class SettingsEnvironmentTests(TestCase):
         result = load_settings({}, dotenv_text="DEBUG=1\nSECRET_KEY=from-dotenv\n")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "True from-dotenv")
+
+    def test_allowed_hosts_and_csrf_origins_come_from_environment(self):
+        result = load_settings(
+            {"DEBUG": "1", "ALLOWED_HOSTS": ".trycloudflare.com,localhost",
+             "CSRF_TRUSTED_ORIGINS": "https://*.trycloudflare.com"},
+            expr="s.ALLOWED_HOSTS, s.CSRF_TRUSTED_ORIGINS",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            result.stdout.strip(),
+            "['.trycloudflare.com', 'localhost'] ['https://*.trycloudflare.com']",
+        )
