@@ -5,6 +5,8 @@ from accounts.forms import RegistrationForm
 
 
 def register(request):
+    if request.user.is_authenticated:
+        return redirect("home")
     form = RegistrationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()

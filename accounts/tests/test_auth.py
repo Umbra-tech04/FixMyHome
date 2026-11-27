@@ -75,3 +75,26 @@ class NavigationTests(TestCase):
         self.assertContains(logged_in, "Mester")
         self.assertContains(logged_in, "Kilépés")
         self.assertNotContains(logged_in, "Regisztráció")
+
+
+class LoggedInRedirectTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(email="anna@example.com", password="Jelszo-12345", name="Anna")
+        self.client.force_login(self.user)
+
+    def test_logged_in_user_is_redirected_from_register(self):
+        for method in ("get", "post"):
+            with self.subTest(method=method):
+                response = getattr(self.client, method)(reverse("register"))
+                self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
+        self.assertEqual(User.objects.count(), 1)
+
+    def test_logged_in_user_is_redirected_from_login(self):
+        response = self.client.get(reverse("login"))
+        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
+
+    def test_anonymous_user_still_sees_both_pages(self):
+        self.client.logout()
+        for name in ("register", "login"):
+            with self.subTest(page=name):
+                self.assertEqual(self.client.get(reverse(name)).status_code, 200)
