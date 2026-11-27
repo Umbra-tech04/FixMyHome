@@ -83,16 +83,6 @@ main.container > :nth-child(2) { animation-delay: .06s; } main.container > :nth-
 .site-footer { padding: 24px 0; color: var(--muted); font-size: .85rem; border-top: var(--b) solid var(--line); }
 
 /* ---------- DEMO panel (szerep- és témaváltó, nem része a termék-UI-nak) ---------- */
-.demo-panel { position: fixed; right: 16px; bottom: 16px; z-index: 2000; background: var(--surface); border: var(--b) solid var(--ink); box-shadow: var(--shadow); font-size: .8rem; animation: rise .5s .4s var(--ease) both; }
-.demo-panel summary { cursor: pointer; padding: 6px 12px; font-weight: 800; letter-spacing: .12em; list-style: none; }
-.demo-panel summary::-webkit-details-marker { display: none; }
-.demo-panel[open] summary { border-bottom: var(--b) solid var(--ink); }
-.demo-panel .demo-body { padding: 10px 12px; display: grid; gap: 8px; }
-.demo-panel .row { gap: 6px; }
-.seg { display: inline-flex; border: var(--b) solid var(--ink); }
-.seg button { border: 0; background: none; color: var(--ink); font: 700 .8rem var(--font); padding: 5px 10px; cursor: pointer; }
-.seg button + button { border-left: var(--b) solid var(--ink); }
-.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 .linklike { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; text-align: left; }
 
 /* ---------- Oldalfej: 1 cím + 1 mondat + 1 fő gomb ---------- */
@@ -401,7 +391,4 @@ dialog.modal::backdrop { background: rgba(10,12,18,.55); animation: fade .3s bot
   #toasts { width: calc(100% - 32px); bottom: 64px; }
   .toast { min-width: 0; width: 100%; }
   /* DEMO panel: kisebb, a lap alján lévő tartalmat a main alsó paddingje szabadon hagyja */
-  .demo-panel { right: 8px; bottom: 8px; }
-  .demo-panel .demo-body { max-width: calc(100vw - 32px); }
-  .demo-panel .seg button { padding: 5px 7px; }
 }

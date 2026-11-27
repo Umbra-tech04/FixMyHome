@@ -1,7 +1,6 @@
 /* FixMyHome – a Django-oldalak kliensoldali része (a design/app.js-ből átemelve, kamu adatok nélkül).
-   defer-rel töltődik; a téma első beállítását a base.html inline scriptje végzi (window.FMH_THEMES, localStorage „fmh-theme”).
+   defer-rel töltődik.
    Hookok a markupban:
-     link#theme-css + window.FMH_THEMES a [data-theme="a|b"] gombok cserélik (localStorage „fmh-theme”)
      .main-nav .nav-indicator           csúszó aktív aláhúzás a menüben
      [data-geolocate]                   gomb egy formban, benne [name=latitude] / [name=longitude] rejtett mezőkkel;
                                         alapból beküldi a formot, data-geolocate="fill" esetén csak kitölti
@@ -13,9 +12,6 @@
      .card-list > *                     lépcsőzetes megjelenés */
 
 (() => {
-  const KEY = 'fmh-theme';
-  const THEMES = window.FMH_THEMES || {};
-  const theme = THEMES[localStorage.getItem(KEY)] ? localStorage.getItem(KEY) : (window.FMH_DEFAULT_THEME || 'c');
   window.FMH_CONFIRM = true; // a base.html natív confirm() fallbackja így nem kérdez másodszor
 
   const $ = (s, el = document) => el.querySelector(s);
@@ -48,24 +44,6 @@
   }
 
   const stagger = () => $$('.card-list').forEach(l => $$(':scope > *', l).forEach((c, i) => c.style.setProperty('--i', i)));
-
-  function initTheme() {
-    $$('[data-theme]:is(button, a)').forEach(b => {
-      b.setAttribute('aria-pressed', b.dataset.theme === theme);
-      b.addEventListener('click', e => {
-        e.preventDefault();
-        localStorage.setItem(KEY, b.dataset.theme);
-        const link = document.getElementById('theme-css');
-        if (link && THEMES[b.dataset.theme]) {
-          // Új betűtípus = új menüszélességek: töltés után a csúszó aláhúzást újra kell igazítani.
-          link.addEventListener('load', () => document.fonts.ready.then(() => window.dispatchEvent(new Event('fmh:theme'))), { once: true });
-          link.href = THEMES[b.dataset.theme];
-        }
-        document.documentElement.dataset.theme = b.dataset.theme;
-        $$('[data-theme]:is(button, a)').forEach(x => x.setAttribute('aria-pressed', x === b));
-      });
-    });
-  }
 
   function initMessages() {
     $$('.messages').forEach(ul => {
@@ -219,7 +197,6 @@
     links.forEach(a => a.addEventListener('mouseenter', () => move(a)));
     $('.main-nav').addEventListener('mouseleave', () => move(home));
     document.fonts?.ready.then(() => move(home));
-    window.addEventListener('fmh:theme', () => move(home));
   }
 
   function initProfile() {
@@ -230,7 +207,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    initTheme(); initNav(); initProfile(); initMessages(); initGeolocate(); initMap(); initPreview(); initConfirm(); stagger();
+    initNav(); initProfile(); initMessages(); initGeolocate(); initMap(); initPreview(); initConfirm(); stagger();
   });
   window.FixMyHome = { toast, modal };
 })();
