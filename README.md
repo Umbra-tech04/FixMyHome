@@ -12,24 +12,47 @@ cp .env.example .env && python manage.py migrate && python manage.py seed_demo  
 python manage.py runserver                                                # 5. indítás: http://127.0.0.1:8000
 ```
 
-Ubuntu/Debian alatt a venvhez kell a `python3-venv` csomag (pl. `sudo apt install python3.14-venv`); Python 3.12–3.14 is jó.
+A projekt Python 3.12-vel készül. Ubuntu/Debian alatt a venvhez kell a `python3.12-venv` csomag (`sudo apt install python3.12-venv`).
+
+> ⚠️ A `seed_demo` minden fiókjának jelszava `test1234`. Csak helyi gépen futtasd; **éles vagy alagúton elérhető környezetben tilos**.
 
 Admin felülethez: `python manage.py createsuperuser` (e-mail + név + jelszó), majd `/admin/`.
 Tesztek: `python manage.py test`.
 
 ## Adatbázis
 
-Helyben SQLite (nulla beállítás). Élesben PostgreSQL: állítsd be a `DATABASE_URL` környezeti változót (lásd `.env.example`).
+Helyben SQLite (nulla beállítás). Élesben PostgreSQL: állítsd be a `DATABASE_URL` környezeti változót (lásd `.env.example`; az adatbázis neve mindenhol `fixmyhome`).
 
 Helyi PostgreSQL (opcionális): `docker compose up -d db`, majd a `.env`-be: `DATABASE_URL=postgres://fixmyhome:fixmyhome@localhost:5432/fixmyhome`.
 
 ## Bemutató adatok
 
-`python manage.py seed_demo` (többször is futtatható). Minden fiók jelszava: `test1234`.
+`python manage.py seed_demo` (többször is futtatható). Minden fiók jelszava: `test1234`, ezért **éles vagy alagutas környezetben tilos futtatni**.
 
 - `felhasznalo@fixmyhome.test`: felhasználó (Szabadka), 8 hirdetéssel (nyitott, folyamatban, lezárt; a „Csöpög a konyhai csap” hirdetésre függő jelentkezés vár)
 - `villanyszerelo@` (Szabadka; 1 folyamatban lévő és 1 lezárt munka, 1 szolgáltatás), `vizszerelo@` (Palics), `festo@` (Topolya), `asztalos@` (Zenta, nem elérhető): mesterek, mind `@fixmyhome.test`
 - `ugyfelszolgalat@fixmyhome.test`: ügyfélszolgálat
+
+## Alagút és éles futtatás
+
+Ha más is eléri az oldalt (Cloudflare-alagút vagy hosting), a `.env`-ben:
+
+```env
+DEBUG=0
+SECRET_KEY=<véletlen, legalább 50 karakter>   # python -c "import secrets; print(secrets.token_urlsafe(50))"
+ALLOWED_HOSTS=<a-te-alagutad>.trycloudflare.com
+CSRF_TRUSTED_ORIGINS=https://<a-te-alagutad>.trycloudflare.com
+TRUST_PROXY_SSL_HEADER=1
+```
+
+- `DEBUG=0` mellett a gyenge kulcs (rövid, `django-insecure`-os vagy a `.env.example`-ben lévő) miatt az oldal **el sem indul**.
+- **Proxy/alagút mögött `TRUST_PROXY_SSL_HEADER=1` nélkül végtelen átirányítás lesz:** a Django a proxytól sima HTTP-t lát, és a `SECURE_SSL_REDIRECT` (alapból be) újra és újra HTTPS-re küld. Proxy nélkül viszont **ne** kapcsold be, mert akkor a kliens hamisíthatja az `X-Forwarded-Proto` fejlécet.
+- A Cloudflare dokumentációja szerint a proxyzott kéréseknél az `X-Forwarded-Proto` a látogató protokollját tartalmazza ([HTTP headers](https://developers.cloudflare.com/fundamentals/reference/http-headers/)). **Ellenőrizetlen:** a cloudflared/quick tunnel dokumentációja ezt külön nem írja le. Ha a `TRUST_PROXY_SSL_HEADER=1` mellett is végtelen átirányítást kapsz, a fejléc nem érkezik meg; ilyenkor állítsd `SECURE_SSL_REDIRECT=0`-ra (az alagút amúgy is HTTPS).
+- `CSRF_TRUSTED_ORIGINS`-be a pontos `https://…` címet írd, ne `*.trycloudflare.com`-ot. A quick tunnel címe minden indításkor új, ezért ilyenkor ezt és az `ALLOWED_HOSTS`-t is frissíteni kell.
+- A runserver alapból csak a `127.0.0.1`-en figyel; így kívülről csak az alagúton át érhető el, ezért bízhatunk a proxy fejlécében. Ne indítsd `0.0.0.0`-n.
+- HSTS: `SECURE_HSTS_SECONDS` (alapból 3600). Növelni csak akkor, ha az oldal biztosan végig HTTPS marad.
+
+Ellenőrzés indítás előtt: `python manage.py check --deploy`. Csak a `security.W005` és a `security.W021` maradhat (HSTS `includeSubDomains` és `preload`): ezeket szándékosan nem kapcsoljuk be, mert nem a mi kezünkben van a teljes domain.
 
 ## Felépítés
 

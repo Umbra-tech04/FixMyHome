@@ -2,8 +2,9 @@ import os
 from pathlib import Path
 
 import dj_database_url
-from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
+
+from config.security import env_bool, validate_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -13,9 +14,8 @@ load_dotenv(os.environ.get("DOTENV_FILE", BASE_DIR / ".env"))
 DEBUG = os.environ.get("DEBUG", "0") == "1"
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "")
+validate_secret_key(SECRET_KEY, DEBUG)
 if not SECRET_KEY:
-    if not DEBUG:
-        raise ImproperlyConfigured("A SECRET_KEY környezeti változó kötelező, ha a DEBUG ki van kapcsolva.")
     SECRET_KEY = "dev-only-insecure-key-change-me"
 
 ALLOWED_HOSTS = [h for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h]
@@ -94,6 +94,15 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Az OSM-csempeszerver Referer nélkül 403-at ad (tile usage policy); a Django alapértéke, a "same-origin", nem küld Referert más domainre.
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+# HTTPS és sütik: csak éles módban (DEBUG=0); fejlesztésnél sima http://127.0.0.1 is működjön.
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = False if DEBUG else env_bool("SECURE_SSL_REDIRECT", True)
+SECURE_HSTS_SECONDS = 0 if DEBUG else int(os.environ.get("SECURE_HSTS_SECONDS", "3600"))
+# Csak proxy/alagút mögött kapcsold be: proxy nélkül a kliens hamisíthatja az X-Forwarded-Proto fejlécet.
+# Proxy mögött viszont kell, különben SECURE_SSL_REDIRECT=1 mellett végtelen átirányítás lesz.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if env_bool("TRUST_PROXY_SSL_HEADER", False) else None
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
