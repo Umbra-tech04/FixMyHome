@@ -54,6 +54,26 @@ TRUST_PROXY_SSL_HEADER=1
 
 Ellenőrzés indítás előtt: `python manage.py check --deploy`. Csak a `security.W005` és a `security.W021` maradhat (HSTS `includeSubDomains` és `preload`): ezeket szándékosan nem kapcsoljuk be, mert nem a mi kezünkben van a teljes domain.
 
+## Jelszótippelés elleni védelem
+
+A `/belepes/` és az `/admin/` belépést a [django-axes](https://django-axes.readthedocs.io/) védi:
+
+- 5 hibás próba után az adott e-mail-cím 15 percre tiltva van, még helyes jelszóval is. Sikeres belépés nullázza a számlálót.
+- A tiltás **e-mail-cím szerint** történik, kis- és nagybetűtől függetlenül (`Anna@x.hu` = `anna@x.hu`). Nem IP szerint, mert alagút mögött minden kérés a `127.0.0.1`-ről jön. Ezért kapcsoltuk ki az `axes.W006` figyelmeztetést.
+- Az IP-t (csak naplózáshoz) a `REMOTE_ADDR`-ből veszi; a hamisítható `X-Forwarded-For` fejlécet nem használja.
+- Ismeretlen e-mail-címre ugyanúgy számol és ugyanazt a tiltási oldalt mutatja (HTTP 429), így nem derül ki, létezik-e a fiók.
+- Hátrány: ha valaki ismeri egy felhasználó e-mail-címét, 5 rossz jelszóval 15 percre kizárhatja.
+- Sikeres belépést nem naplózunk; az adminban (Axes → Access attempts) csak a sikertelen próbák látszanak, és ott törölhetők is.
+
+Beállítások (`.env`): `AXES_FAILURE_LIMIT` (alapból 5), `AXES_COOLOFF_MINUTES` (alapból 15). Mindkettő legalább 1 értékű egész szám; hibás értéknél az oldal nem indul el.
+
+Kézi feloldás:
+
+```bash
+python manage.py axes_reset_username anna@example.com   # egy fiók feloldása (kisbetűvel)
+python manage.py axes_reset                             # minden tiltás és próbálkozás törlése
+```
+
 ## Felépítés
 
 - `config/` – Django-beállítások, URL-ek
