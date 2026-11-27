@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.password_validation import password_validators_help_text_html, validate_password
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from accounts.models import MasterProfile, Role, User
 from accounts.validators import (
@@ -15,6 +15,7 @@ from accounts.validators import (
 from listings.models import Category
 
 REGISTRATION_ROLES = [(Role.USER.value, Role.USER.label), (Role.MASTER.value, Role.MASTER.label)]
+DUPLICATE_EMAIL_MESSAGE = "Ezzel az e-mail-címmel már van fiók."
 MASTER_ONLY_FIELDS = ("profession", "service_area", "contact")
 
 
@@ -54,7 +55,7 @@ class RegistrationForm(forms.Form):
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exists():
-            raise ValidationError("Ezzel az e-mail-címmel már van fiók.")
+            raise ValidationError(DUPLICATE_EMAIL_MESSAGE)
         return email
 
     def clean(self):
@@ -79,8 +80,18 @@ class RegistrationForm(forms.Form):
                 self.add_error(field, "Ez a mező csak mester szerepkörnél adható meg.")
         return cleaned
 
+    def save(self) -> User | None:
+        """Create the account. Returns None (with an e-mail form error) if a parallel request took the address."""
+        try:
+            return self._create()
+        except IntegrityError:
+            if not User.objects.filter(email__iexact=self.cleaned_data["email"]).exists():
+                raise  # not the e-mail race: a real bug, let it surface
+            self.add_error("email", DUPLICATE_EMAIL_MESSAGE)
+            return None
+
     @transaction.atomic
-    def save(self) -> User:
+    def _create(self) -> User:
         data = self.cleaned_data
         user = User.objects.create_user(
             email=data["email"], password=data["password1"],

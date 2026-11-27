@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -224,3 +226,26 @@ class PasswordSimilarityTests(TestCase):
     def test_unrelated_password_is_accepted(self):
         form = RegistrationForm(valid_data(email="kovacs.janos@x.hu", name="Kovács János"))
         self.assertTrue(form.is_valid(), form.errors)
+
+
+class DuplicateEmailRaceTests(TestCase):
+    """Two registrations with the same e-mail at the same time: the second gets a form error, not a 500."""
+
+    url = reverse("register")
+
+    def test_form_save_turns_integrity_error_into_form_error(self):
+        form = RegistrationForm(valid_data())
+        self.assertTrue(form.is_valid(), form.errors)
+        User.objects.create_user(email="anna@example.com", password=PASSWORD, name="Anna")  # the other request wins
+        self.assertIsNone(form.save())
+        self.assertEqual(form.errors["email"], ["Ezzel az e-mail-címmel már van fiók."])
+        self.assertEqual(User.objects.count(), 1)
+
+    def test_view_shows_same_message_instead_of_500(self):
+        User.objects.create_user(email="anna@example.com", password=PASSWORD, name="Anna")
+        # Skip the pre-check, as if both requests passed it before either was saved.
+        with mock.patch.object(RegistrationForm, "clean_email", lambda form: form.cleaned_data["email"].lower()):
+            response = self.client.post(self.url, valid_data())
+        self.assertContains(response, "Ezzel az e-mail-címmel már van fiók.")
+        self.assertEqual(User.objects.count(), 1)
+        self.assertNotIn("_auth_user_id", self.client.session)
