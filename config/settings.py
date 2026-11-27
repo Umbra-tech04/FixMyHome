@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
@@ -31,6 +32,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "accounts",
     "listings",
+    "axes",
 ]
 
 MIDDLEWARE = [
@@ -41,6 +43,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Az utolsó legyen: a tiltási választ ez rendereli (django-axes).
+    "axes.middleware.AxesMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -110,6 +114,28 @@ AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
+
+# Jelszótippelés elleni védelem (django-axes): a /belepes/ és az /admin/ belépést is védi.
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",  # az első legyen
+    "django.contrib.auth.backends.ModelBackend",
+]
+AXES_FAILURE_LIMIT = env_int("AXES_FAILURE_LIMIT", 5, min_value=1)
+AXES_COOLOFF_TIME = timedelta(minutes=env_int("AXES_COOLOFF_MINUTES", 15, min_value=1))
+AXES_RESET_ON_SUCCESS = True
+# Csak e-mail szerint tiltunk: alagút mögött mindenki ugyanarról az IP-ről jön.
+# Az IP-t az axes a REMOTE_ADDR-ből veszi; az X-Forwarded-For fejlécet (hamisítható) nem használja.
+AXES_LOCKOUT_PARAMETERS = ["username"]
+# A login űrlapok (saját és admin) mezője "username"; az axes alapértéke a USERNAME_FIELD ("email") lenne,
+# amivel minden próba üres felhasználónévvel, egy közös számlálón kötne ki.
+AXES_USERNAME_FORM_FIELD = "username"
+AXES_USERNAME_CALLABLE = "accounts.throttling.normalize_username"
+AXES_LOCKOUT_CALLABLE = "accounts.throttling.lockout_response"
+# A sikeres belépéseket nem naplózzuk (kevesebb személyes adat); a sikertelen próbák így is számítanak.
+AXES_DISABLE_ACCESS_LOG = True
+# Az axes.W006 IP szerinti tiltást javasol. Alagút mögött minden kérés REMOTE_ADDR-e 127.0.0.1,
+# így az IP szerinti tiltás egyszerre zárna ki mindenkit; ezért szándékosan csak e-mail szerint tiltunk.
+SILENCED_SYSTEM_CHECKS = ["axes.W006"]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
