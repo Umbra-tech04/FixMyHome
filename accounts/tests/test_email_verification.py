@@ -11,7 +11,7 @@ from django.urls import reverse
 
 from accounts.models import MasterProfile, Role, User
 from accounts.tests.test_registration import master_data, valid_data
-from accounts.tokens import make_verification_token
+from accounts.tokens import VERIFICATION_SALT, email_hash, make_verification_token
 from listings.geo import CITIES, nearby_masters
 from listings.models import Category
 
@@ -79,7 +79,7 @@ class VerifyLinkTests(TestCase):
     def test_forged_link_shows_error_page(self):
         user = unverified_user()
         token = make_verification_token(user)
-        for forged in (token[:-2] + "xx", "nem-token", signing.dumps({"uid": user.pk, "email": user.email})):
+        for forged in (token[:-2] + "xx", "nem-token", signing.dumps({"uid": user.pk, "email_hash": email_hash(user.email)})):
             with self.subTest(forged=forged):
                 self.assertContains(self.client.get(verify_url(forged)), INVALID_TITLE, status_code=400)
         user.refresh_from_db()
@@ -88,7 +88,7 @@ class VerifyLinkTests(TestCase):
     def test_link_of_another_user_does_not_verify_this_one(self):
         anna = unverified_user()
         bela = unverified_user(email="bela@example.com")
-        mixed = signing.dumps({"uid": bela.pk, "email": anna.email}, salt="accounts.email-verification")
+        mixed = signing.dumps({"uid": bela.pk, "email_hash": email_hash(anna.email)}, salt=VERIFICATION_SALT)
         self.assertContains(self.client.get(verify_url(mixed)), INVALID_TITLE, status_code=400)
         anna.refresh_from_db()
         bela.refresh_from_db()
