@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models.functions import Lower
 
 from accounts.validators import normalize_name, normalize_phone, validate_email_address, validate_name, validate_phone
 
@@ -52,6 +53,16 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ["name"]
 
     objects = UserManager()
+
+    class Meta(AbstractUser.Meta):
+        constraints = [
+            # save() lowercases, but update(), bulk_create() and raw SQL do not: the database itself refuses
+            # "Anna@x.hu" next to "anna@x.hu". unique=True stays (the admin's field error comes from it).
+            models.UniqueConstraint(
+                Lower("email"), name="accounts_user_email_ci_unique",
+                violation_error_message="Ezzel az e-mail-címmel már van fiók.",
+            ),
+        ]
 
     def clean(self):
         super().clean()
