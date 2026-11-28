@@ -23,8 +23,8 @@ def env_bool(name: str, default: bool) -> bool:
     return value == "1"
 
 
-def env_int(name: str, default: int, min_value: int) -> int:
-    """Read a whole-number environment value; invalid or too small values are a configuration error."""
+def env_int(name: str, default: int, min_value: int, max_value: int | None = None) -> int:
+    """Read a whole-number environment value; invalid or out-of-range values are a configuration error."""
     value = os.environ.get(name, "").strip()
     if not value:
         return default
@@ -34,7 +34,19 @@ def env_int(name: str, default: int, min_value: int) -> int:
         raise ImproperlyConfigured(f"A(z) {name} értéke egész szám legyen.") from None
     if number < min_value:
         raise ImproperlyConfigured(f"A(z) {name} értéke legalább {min_value} legyen.")
+    if max_value is not None and number > max_value:
+        raise ImproperlyConfigured(f"A(z) {name} értéke legfeljebb {max_value} legyen.")
     return number
+
+
+def env_choice(name: str, default: str, choices: tuple[str, ...]) -> str:
+    """Read one of a fixed set of words; anything else is a configuration error."""
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return default
+    if value not in choices:
+        raise ImproperlyConfigured(f"A(z) {name} értéke csak ez lehet: {', '.join(choices)}.")
+    return value
 
 
 def validate_secret_key(key: str, debug: bool) -> None:
