@@ -98,3 +98,31 @@ class BrokenValueRuleTests(ConstraintMigrationTestCase):
         self.assertIn(f"accounts_masterprofile_coordinates_together)", message)
         profile.refresh_from_db()
         self.assertEqual((profile.latitude, profile.longitude), (95.0, None))
+
+    def test_bad_ads_and_services_stop_the_migration_and_stay_unchanged(self):
+        owner = self.make_user("anna@example.com")
+        category = self.old.get_model("listings", "Category").objects.get(name="Vízszerelő")
+        Ad = self.old.get_model("listings", "Ad")
+        self_chosen = Ad.objects.create(
+            owner=owner, chosen_master=owner, title="Saját magam", description="-", category=category,
+            location_text="Szabadka", status="in_progress",
+        )
+        no_title = Ad.objects.create(
+            owner=owner, title="", description="-", category=category, location_text="Szabadka", status="archived",
+        )
+        service = self.old.get_model("listings", "ServiceListing").objects.create(
+            master=owner, title="Csapcsere", description="-", category=category, service_area="Szabadka",
+            price_category="free",
+        )
+
+        with self.assertRaises(DataCheckError) as ctx:
+            self.migrate_forward()
+
+        message = str(ctx.exception)
+        self.assertIn(f"listings_ad_owner_not_chosen_master): A hirdetés gazdája nem lehet a kiválasztott mester. "
+                      f"Sorok: #{self_chosen.pk}", message)
+        self.assertIn(f"listings_ad_title_not_empty): A cím nem lehet üres. Sorok: #{no_title.pk}", message)
+        self.assertIn(f"listings_ad_status_valid): Érvénytelen állapot. Sorok: #{no_title.pk}", message)
+        self.assertIn(f"listings_servicelisting_price_category_valid): Érvénytelen árkategória. "
+                      f"Sorok: #{service.pk}", message)
+        self.assertEqual(Ad.objects.filter(chosen_master=owner, owner=owner).count(), 1)
