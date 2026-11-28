@@ -44,6 +44,9 @@ class User(AbstractUser):
     # Új adat E.164 alakban (+381641234567); a régi adatokat nem alakítjuk át, csak a következő mentéskor.
     phone = models.CharField("telefon", max_length=30, blank=True, validators=[validate_phone])
     role = models.CharField("szerepkör", max_length=20, choices=Role.choices, default=Role.USER)
+    # True by default: existing rows, seed_demo, the admin and createsuperuser all give verified accounts.
+    # Only the public registration form sets it to False explicitly (accounts.forms.RegistrationForm).
+    email_verified = models.BooleanField("e-mail megerősítve", default=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["name"]

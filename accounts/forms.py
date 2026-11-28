@@ -96,6 +96,7 @@ class RegistrationForm(forms.Form):
         user = User.objects.create_user(
             email=data["email"], password=data["password1"],
             name=data["name"], phone=data["phone"], role=data["role"],
+            email_verified=False,  # the model default is True; only self-registration needs confirmation
         )
         if data["role"] == Role.MASTER:
             MasterProfile.objects.create(

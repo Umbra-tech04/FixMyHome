@@ -41,6 +41,10 @@ class RegistrationTests(TestCase):
         self.assertTrue(user.check_password(PASSWORD))
         self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
 
+    def test_registration_creates_unverified_account(self):
+        self.client.post(self.url, valid_data())
+        self.assertFalse(User.objects.get(email="anna@example.com").email_verified)
+
     def test_master_registration_creates_profile(self):
         self.client.post(self.url, master_data())
         user = User.objects.get(email="bela@example.com")
