@@ -5,7 +5,7 @@
   <div class="card">
     <div class="page-head"><div><h1 class="page-title">Elküldtük a levelet</h1><p class="page-lead">Nézd meg a postafiókodat.</p></div></div>
     <p>A levélben lévő linkkel erősítsd meg az e-mail-címedet; utána be tudsz lépni. A link 24 óráig érvényes.</p>
-    <p class="muted small">Ha néhány percen belül sem érkezik meg, nézd meg a levélszemét mappát is.</p>
+    <p class="muted small">Ha néhány percen belül sem érkezik meg, nézd meg a levélszemét mappát is, vagy <a href="{% url 'resend_verification' %}">kérj új levelet</a>.</p>
     <a class="btn btn-primary btn-block" href="{% url 'login' %}">Tovább a belépéshez</a>
   </div>
 {% endblock %}

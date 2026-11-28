@@ -19,6 +19,26 @@ def _key(kind: str, email: str) -> str:
     return f"accounts:{kind}:{digest}"
 
 
+VERIFICATION_EMAILS_PER_HOUR = 5
+
+
+def allow_verification_email(email: str) -> bool:
+    """At most one verification e-mail per address per minute and five per hour (registration included).
+
+    The hour is a fixed window that starts with the first e-mail, not a sliding one.
+    """
+    if not cache.add(_key("verification-minute", email), True, timeout=MINUTE):
+        return False
+    hour_key = _key("verification-hour", email)
+    cache.add(hour_key, 0, timeout=HOUR)
+    try:
+        sent = cache.incr(hour_key)
+    except ValueError:  # the window expired between add() and incr()
+        cache.set(hour_key, 1, timeout=HOUR)
+        sent = 1
+    return sent <= VERIFICATION_EMAILS_PER_HOUR
+
+
 def allow_already_registered_email(email: str) -> bool:
     """At most one "you already have an account" e-mail per address per hour."""
     # cache.add only writes when the key is missing, so it is the check and the claim in one step.

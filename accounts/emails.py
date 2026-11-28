@@ -8,7 +8,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 
 from accounts.models import User
-from accounts.ratelimit import allow_already_registered_email
+from accounts.ratelimit import allow_already_registered_email, allow_verification_email
 from accounts.tokens import make_verification_token
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,9 @@ def _send(request, template: str, user: User, **context) -> None:
 
 
 def send_verification_email(request, user: User) -> None:
+    """Send a fresh verification link, unless this address hit the resend limit (accounts.ratelimit)."""
+    if not allow_verification_email(user.email):
+        return
     # build_absolute_uri uses the Host header, which ALLOWED_HOSTS has already checked.
     verify_url = request.build_absolute_uri(reverse("verify_email", args=[make_verification_token(user)]))
     _send(request, "verification", user, verify_url=verify_url)

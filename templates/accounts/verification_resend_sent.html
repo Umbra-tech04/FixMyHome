@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Elküldtük a levelet{% endblock %}
+{% block main_class %} auth{% endblock %}
+{% block content %}
+  <div class="card">
+    <div class="page-head"><div><h1 class="page-title">Nézd meg a postafiókodat</h1></div></div>
+    <p>Ha van ilyen fiók, elküldtük a levelet. A benne lévő link 24 óráig érvényes.</p>
+    <p class="muted small">Új levelet percenként legfeljebb egyszer, óránként legfeljebb ötször küldünk ugyanarra a címre.</p>
+    <a class="btn btn-primary btn-block" href="{% url 'login' %}">Tovább a belépéshez</a>
+  </div>
+{% endblock %}

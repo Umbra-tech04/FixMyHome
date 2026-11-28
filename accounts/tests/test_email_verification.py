@@ -128,6 +128,9 @@ class MasterVisibilityTests(TestCase):
 class RegistrationEmailTests(TestCase):
     url = reverse("register")
 
+    def setUp(self):
+        cache.clear()  # the per-address e-mail limits live in the cache, which outlives a test
+
     def register(self, **overrides):
         return self.client.post(self.url, valid_data(**overrides))
 

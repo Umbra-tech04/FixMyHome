@@ -3,7 +3,7 @@ from django.db import transaction
 from django.shortcuts import redirect, render
 
 from accounts.emails import send_existing_account_notice, send_verification_email
-from accounts.forms import RegistrationForm
+from accounts.forms import RegistrationForm, ResendVerificationForm
 from accounts.models import MasterProfile, User
 from accounts.tokens import user_from_verification_token
 
@@ -28,6 +28,23 @@ def register(request):
 
 def verification_sent(request):
     return render(request, "accounts/verification_sent.html")
+
+
+def resend_verification(request):
+    """Ask for a new verification e-mail. The answer never tells whether such an account exists."""
+    form = ResendVerificationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = User.objects.filter(
+            email__iexact=form.cleaned_data["email"], is_active=True, email_verified=False,
+        ).first()
+        if user is not None:
+            send_verification_email(request, user)  # rate limited per address
+        return redirect("resend_verification_sent")
+    return render(request, "accounts/verification_resend.html", {"form": form})
+
+
+def resend_verification_sent(request):
+    return render(request, "accounts/verification_resend_sent.html")
 
 
 def verify_email(request, token):

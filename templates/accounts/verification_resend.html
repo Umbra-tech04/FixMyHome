@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Új megerősítő levél{% endblock %}
+{% block main_class %} auth{% endblock %}
+{% block content %}
+  <div class="card">
+    <div class="page-head"><div><h1 class="page-title">Új megerősítő levél</h1><p class="page-lead">Add meg az e-mail-címet, amellyel regisztráltál.</p></div></div>
+    <form method="post" class="form" novalidate>
+      {% csrf_token %}
+      {% for error in form.non_field_errors %}<p class="form-alert" role="alert">{{ error }}</p>{% endfor %}
+      {% include "listings/_field.html" with field=form.email %}
+      <button type="submit" class="btn btn-primary btn-block">Küldd el újra</button>
+      <p class="muted small" style="text-align:center;margin:0"><a href="{% url 'login' %}">Vissza a belépéshez</a></p>
+    </form>
+  </div>
+{% endblock %}

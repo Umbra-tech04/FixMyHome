@@ -5,6 +5,7 @@
   <div class="card">
     <div class="page-head"><div><h1 class="page-title">A link érvénytelen vagy lejárt</h1></div></div>
     <p class="form-alert" role="alert">A megerősítő link 24 óráig érvényes, és csak ahhoz az e-mail-címhez tartozik, amelyre küldtük. Kérj új levelet, vagy ha már megerősítetted a címedet, lépj be.</p>
-    <a class="btn btn-primary btn-block" href="{% url 'login' %}">Belépés</a>
+    <a class="btn btn-primary btn-block" href="{% url 'resend_verification' %}">Új levelet kérek</a>
+    <p class="muted small" style="text-align:center;margin:0"><a href="{% url 'login' %}">Vissza a belépéshez</a></p>
   </div>
 {% endblock %}

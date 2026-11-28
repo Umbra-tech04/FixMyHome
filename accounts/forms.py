@@ -5,6 +5,8 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import password_validators_help_text_html, validate_password
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.urls import reverse
+from django.utils.html import format_html
 
 from accounts.models import MasterProfile, Role, User
 from accounts.validators import (
@@ -121,14 +123,31 @@ class RegistrationForm(forms.Form):
         return user
 
 
-UNVERIFIED_LOGIN_MESSAGE = "Még nem erősítetted meg az e-mail-címedet. Nyisd meg a levelünkben kapott linket."
+UNVERIFIED_LOGIN_MESSAGE = (
+    "Még nem erősítetted meg az e-mail-címedet. Nyisd meg a levelünkben kapott linket, "
+    'vagy <a href="{url}">kérj új levelet</a>.'
+)
 
 
 def ensure_email_verified(user: User) -> None:
     # Runs only after authenticate() accepted the password, so axes does not count it as a failed attempt,
     # and only someone who knows the password learns that the account exists.
     if not user.email_verified:
-        raise ValidationError(UNVERIFIED_LOGIN_MESSAGE, code="email_unverified")
+        # format_html gives a safe string, so the login templates ({{ error }}) show a real link.
+        # It contains no user input; the URL is fixed (no "next" parameter, so no open redirect).
+        message = format_html(UNVERIFIED_LOGIN_MESSAGE, url=reverse("resend_verification"))
+        raise ValidationError(message, code="email_unverified")
+
+
+class ResendVerificationForm(forms.Form):
+    email = forms.EmailField(label="E-mail", max_length=254)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["email"].widget.attrs["autocomplete"] = "email"
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
 
 
 class EmailAuthenticationForm(AuthenticationForm):
