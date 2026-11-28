@@ -74,3 +74,27 @@ class CaseOnlyDuplicateEmailTests(ConstraintMigrationTestCase):
         self.assertEqual(
             sorted(User.objects.values_list("email", flat=True)), ["Anna@Example.com", "anna@example.com"],
         )
+
+
+class BrokenValueRuleTests(ConstraintMigrationTestCase):
+    def test_bad_master_coordinates_and_role_stop_the_migration_and_stay_unchanged(self):
+        master = self.make_user("mester@example.com", role="master")
+        stranger = self.make_user("bela@example.com", role="boss")
+        Category = self.old.get_model("listings", "Category")
+        MasterProfile = self.old.get_model("accounts", "MasterProfile")
+        profile = MasterProfile.objects.create(
+            user=master, profession=Category.objects.get(name="Vízszerelő"), service_area="Szabadka",
+            contact="-", latitude=95.0, longitude=None,
+        )
+
+        with self.assertRaises(DataCheckError) as ctx:
+            self.migrate_forward()
+
+        message = str(ctx.exception)
+        self.assertIn("A migráció leállt", message)
+        self.assertIn(f"accounts_user_role_valid): Érvénytelen szerepkör. Sorok: #{stranger.pk}", message)
+        self.assertIn(f"accounts_masterprofile_latitude_range): A szélesség -90 és 90 fok között lehet. "
+                      f"Sorok: #{profile.pk}", message)
+        self.assertIn(f"accounts_masterprofile_coordinates_together)", message)
+        profile.refresh_from_db()
+        self.assertEqual((profile.latitude, profile.longitude), (95.0, None))
