@@ -13,9 +13,13 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from accounts.models import User
+from axes.models import AccessAttempt
+
+from accounts.models import MasterProfile, Role, User
 from accounts.ratelimit import allow_password_reset_email, allow_verification_email
 from config.tests import load_settings
+from listings.geo import CITIES, nearby_masters
+from listings.models import Category
 
 
 class PasswordResetSettingsTests(SimpleTestCase):
@@ -326,3 +330,109 @@ class SetNewPasswordTests(TestCase):
         token = default_token_generator.make_token(self.anna)
         User.objects.filter(pk=self.anna.pk).update(is_superuser=True, is_staff=True)
         self.assertContains(self.open_link(token=token), INVALID_TITLE)
+
+
+
+CHANGED_MESSAGE = "Jelszavad megváltozott"
+
+
+class AfterResetTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.anna = make_user()
+
+    def reset_password(self, client=None, user=None):
+        client = client or self.client
+        user = user or self.anna
+        user.refresh_from_db()  # a login changes last_login, which is part of the token
+        client.get(reset_link(user), follow=True)
+        return client.post(
+            set_password_path(user), {"new_password1": NEW_PASSWORD, "new_password2": NEW_PASSWORD},
+        )
+
+    def log_in(self, client, password=PASSWORD, email="anna@example.com"):
+        return client.post(reverse("login"), {"username": email, "password": password})
+
+    @staticmethod
+    def is_logged_in(client):
+        return client.get(reverse("home")).wsgi_request.user.is_authenticated
+
+    def test_existing_sessions_are_logged_out(self):
+        other_browser = Client()
+        self.log_in(other_browser)
+        self.assertTrue(self.is_logged_in(other_browser))
+        self.reset_password()
+        self.assertFalse(self.is_logged_in(other_browser))
+
+    def test_the_resetting_browser_is_logged_out_too(self):
+        self.log_in(self.client)
+        self.reset_password()
+        self.assertFalse(self.is_logged_in(self.client))
+
+    def test_another_account_logged_in_on_this_browser_is_logged_out(self):
+        make_user(email="bela@example.com", name="Béla")
+        self.log_in(self.client, email="bela@example.com")
+        self.reset_password()
+        self.assertFalse(self.is_logged_in(self.client))
+
+    def test_no_automatic_login_and_a_message_on_the_login_page(self):
+        response = self.reset_password()
+        self.assertRedirects(response, reverse("login"), fetch_redirect_response=False)
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertContains(self.client.get(reverse("login")), CHANGED_MESSAGE)
+
+    def test_new_password_logs_in_and_old_one_does_not(self):
+        self.reset_password()
+        self.assertEqual(self.log_in(Client()).status_code, 200)  # form error, no redirect
+        self.assertRedirects(self.log_in(Client(), NEW_PASSWORD), reverse("home"), fetch_redirect_response=False)
+
+    def test_lockout_of_this_address_is_lifted(self):
+        make_user(email="bela@example.com", name="Béla")
+        for _ in range(settings.AXES_FAILURE_LIMIT):
+            self.log_in(Client(), password="rossz-jelszo")
+            self.log_in(Client(), password="rossz-jelszo", email="bela@example.com")
+        self.assertEqual(self.log_in(Client(), PASSWORD).status_code, 429)
+        self.reset_password()
+        self.assertFalse(AccessAttempt.objects.filter(username="anna@example.com").exists())
+        self.assertRedirects(self.log_in(Client(), NEW_PASSWORD), reverse("home"), fetch_redirect_response=False)
+        # Only this address: someone else's lockout stays.
+        self.assertTrue(AccessAttempt.objects.filter(username="bela@example.com").exists())
+
+    def test_unverified_account_becomes_verified(self):
+        unverified = make_user(email="uj@example.com", email_verified=False)
+        self.reset_password(user=unverified)
+        unverified.refresh_from_db()
+        self.assertTrue(unverified.email_verified)
+        self.assertRedirects(
+            self.log_in(Client(), NEW_PASSWORD, email="uj@example.com"), reverse("home"),
+            fetch_redirect_response=False,
+        )
+
+    def test_unverified_master_becomes_visible(self):
+        master = make_user(email="bela@example.com", name="Béla", role=Role.MASTER, email_verified=False)
+        MasterProfile.objects.create(
+            user=master, profession=Category.objects.get(name="Festő"), service_area="Szabadka", contact="x",
+            latitude=CITIES["Szabadka"][0], longitude=CITIES["Szabadka"][1], is_available=False,
+        )
+        self.reset_password(user=master)
+        self.assertIn(master, [p.user for p in nearby_masters(*CITIES["Szabadka"], 50)])
+
+    def test_verified_master_keeps_an_unavailable_choice(self):
+        master = make_user(email="bela@example.com", name="Béla", role=Role.MASTER)
+        profile = MasterProfile.objects.create(
+            user=master, profession=Category.objects.get(name="Festő"), service_area="Szabadka", contact="x",
+            is_available=False,
+        )
+        self.reset_password(user=master)
+        profile.refresh_from_db()
+        self.assertFalse(profile.is_available)
+
+    def test_whole_flow_from_the_request_page(self):
+        self.client.post(reverse("password_reset"), {"email": "anna@example.com"})
+        path = RESET_LINK_RE.search(mail.outbox[0].body).group(1)
+        fixed = self.client.get(path, follow=True)
+        self.assertContains(fixed, 'name="new_password1"')
+        self.client.post(
+            fixed.redirect_chain[-1][0], {"new_password1": NEW_PASSWORD, "new_password2": NEW_PASSWORD},
+        )
+        self.assertRedirects(self.log_in(Client(), NEW_PASSWORD), reverse("home"), fetch_redirect_response=False)

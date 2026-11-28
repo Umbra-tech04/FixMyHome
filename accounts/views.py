@@ -1,4 +1,6 @@
+from axes.utils import reset as reset_axes_attempts
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.views import PasswordResetConfirmView
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
@@ -9,6 +11,7 @@ from accounts.models import User, mark_email_verified
 from accounts.tokens import user_from_verification_token
 
 VERIFIED_MESSAGE = "Az e-mail-címedet megerősítettük, most már beléphetsz."
+PASSWORD_CHANGED_MESSAGE = "Jelszavad megváltozott, most már beléphetsz az új jelszóval."
 
 
 def register(request):
@@ -87,3 +90,18 @@ class PasswordResetConfirm(PasswordResetConfirmView):
         # was deactivated, or made a superuser, after the e-mail went out.
         user = super().get_user(uidb64)
         return user if user is not None and user.is_active and not user.is_superuser else None
+
+    def form_valid(self, form):
+        # Saves the password and drops the token from the session. Every existing session of the account ends:
+        # Django keeps a hash of the password in each session, and it no longer matches (so no
+        # update_session_auth_hash here). There is no login(): the user logs in with the new password.
+        response = super().form_valid(form)
+        user = form.user
+        if self.request.user.is_authenticated:
+            logout(self.request)  # whoever is logged in on this browser
+        # The e-mailed link proves the mailbox is theirs; this also shows an unverified master in the search.
+        mark_email_verified([user.pk])
+        # Lift this address's login lockout (axes keys attempts by the lowercased address).
+        reset_axes_attempts(username=user.email)
+        messages.success(self.request, PASSWORD_CHANGED_MESSAGE)
+        return response
