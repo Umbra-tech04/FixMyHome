@@ -70,6 +70,11 @@ class Ad(models.Model):
             ),
             not_empty("title", "listings_ad_title_not_empty", "A cím nem lehet üres."),
         ]
+        indexes = [
+            # listings.geo.nearby_open_ads (the master's home page): status='open' AND category_id=?. The FK index
+            # on category alone also walks the category's done and withdrawn ads, which only grow.
+            models.Index(fields=["category", "status"], name="ad_category_status_idx"),
+        ]
         verbose_name = "hirdetés"
         verbose_name_plural = "hirdetések"
 
