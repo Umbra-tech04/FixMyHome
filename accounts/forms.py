@@ -139,7 +139,9 @@ def ensure_email_verified(user: User) -> None:
         raise ValidationError(message, code="email_unverified")
 
 
-class ResendVerificationForm(forms.Form):
+class EmailAddressForm(forms.Form):
+    """One e-mail field: the verification resend and the password reset request pages."""
+
     email = forms.EmailField(label="E-mail", max_length=254)
 
     def __init__(self, *args, **kwargs):

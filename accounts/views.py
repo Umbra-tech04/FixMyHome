@@ -1,8 +1,9 @@
 from django.contrib import messages
+from django.contrib.auth.views import PasswordResetConfirmView
 from django.shortcuts import redirect, render
 
-from accounts.emails import send_existing_account_notice, send_verification_email
-from accounts.forms import RegistrationForm, ResendVerificationForm
+from accounts.emails import send_existing_account_notice, send_password_reset_email, send_verification_email
+from accounts.forms import EmailAddressForm, RegistrationForm
 from accounts.models import User, mark_email_verified
 from accounts.tokens import user_from_verification_token
 
@@ -31,7 +32,7 @@ def verification_sent(request):
 
 def resend_verification(request):
     """Ask for a new verification e-mail. The answer never tells whether such an account exists."""
-    form = ResendVerificationForm(request.POST or None)
+    form = EmailAddressForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = User.objects.filter(
             email__iexact=form.cleaned_data["email"], is_active=True, email_verified=False,
@@ -55,3 +56,25 @@ def verify_email(request, token):
     messages.success(request, VERIFIED_MESSAGE)
     # The redirect also drops the token from the address bar.
     return redirect("login")
+
+
+def password_reset(request):
+    """Ask for a password reset e-mail. The answer is the same whether or not an e-mail goes out (K3)."""
+    form = EmailAddressForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        send_password_reset_email(request, form.cleaned_data["email"])  # silent for unknown addresses; rate limited
+        return redirect("password_reset_sent")
+    return render(request, "accounts/password_reset.html", {"form": form})
+
+
+def password_reset_sent(request):
+    return render(request, "accounts/password_reset_sent.html")
+
+
+class PasswordResetConfirm(PasswordResetConfirmView):
+    """Django's view: the e-mailed link puts the token in the session and redirects to a fixed address
+    (".../uj-jelszo/"), so the token does not stay in the address bar, the Referer header or later log lines.
+    """
+
+    reset_url_token = "uj-jelszo"
+    template_name = "accounts/password_reset_confirm.html"

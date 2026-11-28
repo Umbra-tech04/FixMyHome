@@ -18,4 +18,11 @@ urlpatterns = [
     path("email-megerosites/ujrakuldes/", views.resend_verification, name="resend_verification"),
     path("email-megerosites/ujrakuldes/elkuldve/", views.resend_verification_sent, name="resend_verification_sent"),
     path("email-megerosites/<str:token>/", views.verify_email, name="verify_email"),
+    path("jelszo-visszaallitas/", views.password_reset, name="password_reset"),
+    path("jelszo-visszaallitas/elkuldve/", views.password_reset_sent, name="password_reset_sent"),
+    # The e-mailed link; the view redirects it to "<uidb64>/uj-jelszo/", without the token.
+    path(
+        "jelszo-visszaallitas/<uidb64>/<token>/", views.PasswordResetConfirm.as_view(),
+        name="password_reset_confirm",
+    ),
 ]
