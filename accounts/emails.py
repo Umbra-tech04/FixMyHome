@@ -62,8 +62,8 @@ def send_existing_account_notice(request, user: User) -> None:
     if not user.email_verified:
         send_verification_email(request, user)
     elif allow_already_registered_email(user.email):
-        # There is no "forgotten password" page yet (7b), so that line links to the login page as well.
-        _send(request, "already_registered", user, password_reset_url=request.build_absolute_uri(reverse("login")))
+        password_reset_url = request.build_absolute_uri(reverse("password_reset"))
+        _send(request, "already_registered", user, password_reset_url=password_reset_url)
 
 
 def password_reset_recipient(email: str) -> User | None:

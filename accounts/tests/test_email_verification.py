@@ -224,7 +224,8 @@ class ExistingAddressRegistrationTests(TestCase):
         self.assertEqual(message.subject, ALREADY_SUBJECT)
         self.assertIn("Ehhez a címhez már tartozik fiók.", message.body)
         self.assertIn("Ha te voltál, lépj be: http://testserver/belepes/", message.body)
-        self.assertIn("Ha nem emlékszel a jelszavadra: http://testserver/belepes/", message.body)
+        # Changed with the password reset (7b): this line pointed to the login page until the reset page existed.
+        self.assertIn("Ha nem emlékszel a jelszavadra: http://testserver/jelszo-visszaallitas/", message.body)
         self.assertIn("Ha nem te voltál, nincs teendőd, a fiókod biztonságban van.", message.body)
         self.assertNotRegex(message.body, LINK_RE)  # no verification token for someone else's attempt
 

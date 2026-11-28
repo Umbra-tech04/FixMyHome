@@ -9,7 +9,7 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_toke
 from django.core import mail
 from django.core.cache import cache
 from django.test import Client, SimpleTestCase, TestCase, override_settings
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
@@ -436,3 +436,29 @@ class AfterResetTests(TestCase):
             fixed.redirect_chain[-1][0], {"new_password1": NEW_PASSWORD, "new_password2": NEW_PASSWORD},
         )
         self.assertRedirects(self.log_in(Client(), NEW_PASSWORD), reverse("home"), fetch_redirect_response=False)
+
+
+
+class PasswordResetLinkTests(TestCase):
+    """Where the reset page is offered, and where it is not (the /admin/ login, see the superuser rule)."""
+
+    reset_link = f'href="{reverse("password_reset")}"'
+
+    def test_login_page_links_to_the_reset_page(self):
+        response = self.client.get(reverse("login"))
+        self.assertContains(response, self.reset_link)
+        self.assertContains(response, "Elfelejtetted a jelszavad?")
+
+    def test_lockout_page_links_to_the_reset_page(self):
+        make_user()
+        for _ in range(settings.AXES_FAILURE_LIMIT):
+            self.client.post(reverse("login"), {"username": "anna@example.com", "password": "rossz"})
+        response = self.client.post(reverse("login"), {"username": "anna@example.com", "password": PASSWORD})
+        self.assertContains(response, self.reset_link, status_code=429)
+
+    def test_admin_login_has_no_reset_link(self):
+        response = self.client.get(reverse("admin:login"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "/jelszo-visszaallitas/")
+        with self.assertRaises(NoReverseMatch):
+            reverse("admin_password_reset")

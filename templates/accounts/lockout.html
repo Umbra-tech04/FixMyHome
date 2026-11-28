@@ -5,6 +5,7 @@
   <div class="card">
     <div class="page-head"><div><h1 class="page-title">Belépés átmenetileg tiltva</h1></div></div>
     <p class="form-alert" role="alert">Túl sok sikertelen próbálkozás. Próbáld újra {{ minutes }} perc múlva.</p>
+    <p>Ha nem emlékszel a jelszavadra, <a href="{% url 'password_reset' %}">állíts be újat</a>: ez a tiltást is feloldja.</p>
     <a class="btn btn-primary btn-block" href="{% url 'login' %}">Vissza a belépéshez</a>
   </div>
 {% endblock %}
