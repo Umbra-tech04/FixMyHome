@@ -102,5 +102,6 @@ class RegistrationForm(forms.Form):
             MasterProfile.objects.create(
                 user=user, profession=data["profession"],
                 service_area=data["service_area"], contact=data["contact"],
+                is_available=False,  # hidden from the search until the e-mail is verified (accounts.views.verify_email)
             )
         return user

@@ -33,13 +33,14 @@ class RegistrationTests(TestCase):
     url = reverse("register")
 
     def test_user_registration_creates_account(self):
+        # Changed with e-mail verification: no automatic login, the "e-mail sent" page follows instead.
         response = self.client.post(self.url, valid_data())
-        self.assertRedirects(response, reverse("home"))
+        self.assertRedirects(response, reverse("verification_sent"))
         user = User.objects.get(email="anna@example.com")
         self.assertEqual(user.role, Role.USER)
         self.assertNotEqual(user.password, PASSWORD)
         self.assertTrue(user.check_password(PASSWORD))
-        self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
+        self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_registration_creates_unverified_account(self):
         self.client.post(self.url, valid_data())

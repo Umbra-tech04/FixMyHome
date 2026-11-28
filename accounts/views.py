@@ -1,8 +1,8 @@
 from django.contrib import messages
-from django.contrib.auth import login
 from django.db import transaction
 from django.shortcuts import redirect, render
 
+from accounts.emails import send_verification_email
 from accounts.forms import RegistrationForm
 from accounts.models import MasterProfile, User
 from accounts.tokens import user_from_verification_token
@@ -17,10 +17,14 @@ def register(request):
     if request.method == "POST" and form.is_valid():
         user = form.save()
         if user is not None:  # None: a parallel registration took the e-mail; the form shows the error
-            # Több backend van (axes + ModelBackend), ezért meg kell nevezni, melyik "léptette be".
-            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-            return redirect("home")
+            # No login here: the account works only after the e-mailed link has been opened.
+            send_verification_email(request, user)
+            return redirect("verification_sent")
     return render(request, "accounts/register.html", {"form": form})
+
+
+def verification_sent(request):
+    return render(request, "accounts/verification_sent.html")
 
 
 def verify_email(request, token):
