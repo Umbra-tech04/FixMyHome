@@ -1,6 +1,7 @@
 import time
 from unittest import mock
 
+from django.conf import settings
 from django.core import mail
 from django.core.cache import cache
 from django.test import Client, TestCase
@@ -11,7 +12,7 @@ from accounts.tests.test_registration import valid_data
 
 PASSWORD = "Jelszo-12345"
 NEUTRAL = "Ha van ilyen fiók, elküldtük a levelet."
-VERIFY_SUBJECT = "Erősítsd meg az e-mail-címedet a MesterKeresőn"
+VERIFY_SUBJECT = f"{settings.SITE_NAME}: erősítsd meg az e-mail-címedet"
 
 
 class ResendTests(TestCase):

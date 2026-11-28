@@ -1,6 +1,6 @@
 {% autoescape off %}Szia, {{ user.name }}!
 
-Valaki ezzel az e-mail-címmel próbált regisztrálni a MesterKeresőn. Ehhez a címhez már tartozik fiók.
+Valaki ezzel az e-mail-címmel próbált regisztrálni ezen az oldalon: {{ site_name }}. Ehhez a címhez már tartozik fiók.
 
 Ha te voltál, lépj be: {{ login_url }}
 
@@ -9,5 +9,5 @@ Ha nem emlékszel a jelszavadra: {{ password_reset_url }}
 Ha nem te voltál, nincs teendőd, a fiókod biztonságban van.
 
 Üdvözlettel:
-a MesterKereső csapata
+{{ site_name }}
 {% endautoescape %}

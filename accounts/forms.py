@@ -29,7 +29,8 @@ class RegistrationForm(forms.Form):
     phone = forms.CharField(label="Telefon", max_length=30, validators=[validate_phone])
     password1 = forms.CharField(label="Jelszó", widget=forms.PasswordInput, help_text=password_validators_help_text_html())
     password2 = forms.CharField(label="Jelszó újra", widget=forms.PasswordInput)
-    role = forms.ChoiceField(label="Szerepkör", choices=REGISTRATION_ROLES)
+    # Preselected "user", so the master-only fields stay hidden until "Mester vagyok" is picked; still required.
+    role = forms.ChoiceField(label="Szerepkör", choices=REGISTRATION_ROLES, initial=Role.USER.value)
     profession = forms.ModelChoiceField(label="Szakma (csak mestereknek)", queryset=Category.objects.all(), required=False)
     # TEMPORARY: PR 3b (registration form redesign) replaces the master-only fields; until then only
     # trimming (CharField default), the length limit and the < > ban apply.

@@ -1,5 +1,6 @@
 from unittest import mock
 
+from django.conf import settings
 from django.core import mail
 from django.core.cache import cache
 from django.test import TestCase
@@ -48,8 +49,24 @@ class RegistrationTests(TestCase):
         self.client.post(self.url, valid_data())
         self.assertFalse(User.objects.get(email="anna@example.com").email_verified)
 
+    def test_registration_page_preselects_the_user_role(self):
+        response = self.client.get(self.url)
+        self.assertContains(response, '<input type="radio" name="role" value="user" checked required>', html=True)
+        self.assertContains(response, '<input type="radio" name="role" value="master">', html=True)
+
+    def test_role_is_still_required(self):
+        missing = valid_data()
+        del missing["role"]
+        for data in (missing, valid_data(role="")):
+            with self.subTest(role=data.get("role")):
+                response = self.client.post(self.url, data)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("role", response.context["form"].errors)
+                self.assertEqual(User.objects.count(), 0)
+
     def test_master_registration_creates_profile(self):
-        self.client.post(self.url, master_data())
+        response = self.client.post(self.url, master_data())
+        self.assertRedirects(response, reverse("verification_sent"))
         user = User.objects.get(email="bela@example.com")
         self.assertEqual(user.role, Role.MASTER)
         profile = user.master_profile
@@ -269,5 +286,5 @@ class DuplicateEmailRaceTests(TestCase):
         self.assertEqual(User.objects.count(), 1)
         self.assertNotIn("_auth_user_id", self.client.session)
         self.assertEqual(
-            [m.subject for m in mail.outbox], ["Valaki ezzel a címmel próbált regisztrálni a MesterKeresőn"],
+            [m.subject for m in mail.outbox], [f"{settings.SITE_NAME}: valaki ezzel a címmel próbált regisztrálni"],
         )

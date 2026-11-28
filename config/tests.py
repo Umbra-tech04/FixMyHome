@@ -265,7 +265,7 @@ class EmailSettingsTests(TestCase):
         env = {
             "DEBUG": "1", "EMAIL_BACKEND": "smtp", "EMAIL_HOST": "smtp.example.com", "EMAIL_PORT": "2525",
             "EMAIL_USE_TLS": "0", "EMAIL_HOST_USER": "mailer", "EMAIL_HOST_PASSWORD": "helyorzo",
-            "DEFAULT_FROM_EMAIL": "MesterKereso <noreply@example.com>",
+            "DEFAULT_FROM_EMAIL": "Proba Oldal <noreply@example.com>",
         }
         result = load_settings(
             env, expr=EMAIL_EXPR + ", s.EMAIL_HOST_USER, s.EMAIL_HOST_PASSWORD == 'helyorzo', s.DEFAULT_FROM_EMAIL",
@@ -274,8 +274,18 @@ class EmailSettingsTests(TestCase):
         self.assertEqual(
             result.stdout.strip(),
             "django.core.mail.backends.smtp.EmailBackend smtp.example.com 2525 False 10 mailer True "
-            "MesterKereso <noreply@example.com>",
+            "Proba Oldal <noreply@example.com>",
         )
+
+    def test_default_from_email_uses_site_name(self):
+        result = load_settings({"DEBUG": "1"}, expr="s.DEFAULT_FROM_EMAIL == f'{s.SITE_NAME} <noreply@localhost>'")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "True")
+
+    def test_default_from_email_follows_site_name_from_environment(self):
+        result = load_settings({"DEBUG": "1", "SITE_NAME": "Proba Oldal"}, expr="s.DEFAULT_FROM_EMAIL")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "Proba Oldal <noreply@localhost>")
 
     def test_unknown_backend_stops_startup(self):
         result = load_settings({"DEBUG": "1", "EMAIL_BACKEND": "sendgrid"})

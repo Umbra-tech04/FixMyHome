@@ -3,10 +3,11 @@ import smtplib
 import time
 from unittest import mock
 
+from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.core import mail, signing
 from django.core.cache import cache
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from accounts.models import MasterProfile, Role, User
@@ -19,9 +20,9 @@ PASSWORD = "Jelszo-12345"
 DAY = 24 * 60 * 60
 VERIFIED_MESSAGE = "Az e-mail-címedet megerősítettük, most már beléphetsz."
 INVALID_TITLE = "A link érvénytelen vagy lejárt"
-VERIFY_SUBJECT = "Erősítsd meg az e-mail-címedet a MesterKeresőn"
+VERIFY_SUBJECT = f"{settings.SITE_NAME}: erősítsd meg az e-mail-címedet"
 SENT_TITLE = "Elküldtük a levelet"
-ALREADY_SUBJECT = "Valaki ezzel a címmel próbált regisztrálni a MesterKeresőn"
+ALREADY_SUBJECT = f"{settings.SITE_NAME}: valaki ezzel a címmel próbált regisztrálni"
 HOUR = 60 * 60
 LINK_RE = re.compile(r"http://testserver(/email-megerosites/[^/\s]+/)")
 
@@ -160,6 +161,15 @@ class RegistrationEmailTests(TestCase):
         self.assertRedirects(self.client.get(path), reverse("login"))
         self.assertTrue(User.objects.get(email="anna@example.com").email_verified)
 
+    def test_email_uses_site_name(self):
+        with override_settings(SITE_NAME="Próba Műhely"):
+            self.register()
+        message = mail.outbox[0]
+        self.assertEqual(message.subject, "Próba Műhely: erősítsd meg az e-mail-címedet")
+        self.assertIn("Köszönjük, hogy regisztráltál ezen az oldalon: Próba Műhely.", message.body)
+        self.assertEqual(message.body.rstrip().splitlines()[-2:], ["Üdvözlettel:", "Próba Műhely"])
+        self.assertNotIn("MesterKereső", message.subject + message.body)
+
     def test_link_uses_the_request_host(self):
         with self.settings(ALLOWED_HOSTS=["mesterkereso.example"]):
             self.client.post(self.url, valid_data(), headers={"host": "mesterkereso.example"})
@@ -228,6 +238,15 @@ class ExistingAddressRegistrationTests(TestCase):
         self.assertIn("Ha nem emlékszel a jelszavadra: http://testserver/jelszo-visszaallitas/", message.body)
         self.assertIn("Ha nem te voltál, nincs teendőd, a fiókod biztonságban van.", message.body)
         self.assertNotRegex(message.body, LINK_RE)  # no verification token for someone else's attempt
+
+    def test_already_registered_email_uses_site_name(self):
+        with override_settings(SITE_NAME="Próba Műhely"):
+            self.register()
+        message = mail.outbox[0]
+        self.assertEqual(message.subject, "Próba Műhely: valaki ezzel a címmel próbált regisztrálni")
+        self.assertIn("Valaki ezzel az e-mail-címmel próbált regisztrálni ezen az oldalon: Próba Műhely.", message.body)
+        self.assertEqual(message.body.rstrip().splitlines()[-2:], ["Üdvözlettel:", "Próba Műhely"])
+        self.assertNotIn("MesterKereső", message.subject + message.body)
 
     def test_already_registered_email_is_sent_at_most_once_an_hour(self):
         for _ in range(3):
