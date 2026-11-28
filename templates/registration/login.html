@@ -10,6 +10,7 @@
       {% include "listings/_field.html" with field=form.username %}
       {% include "listings/_field.html" with field=form.password %}
       <input type="hidden" name="next" value="{{ next }}">
+      <p class="muted small" style="margin:0"><a href="{% url 'password_reset' %}">Elfelejtetted a jelszavad?</a></p>
       <button type="submit" class="btn btn-primary btn-block">Belépek</button>
       <p class="muted small" style="text-align:center;margin:0">Még nincs fiókod? <a href="{% url 'register' %}">Regisztráció</a></p>
     </form>

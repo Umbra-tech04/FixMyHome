@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.admin.forms import AdminAuthenticationForm
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, SetPasswordForm
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import password_validators_help_text_html, validate_password
 from django.core.exceptions import ValidationError
@@ -139,7 +139,9 @@ def ensure_email_verified(user: User) -> None:
         raise ValidationError(message, code="email_unverified")
 
 
-class ResendVerificationForm(forms.Form):
+class EmailAddressForm(forms.Form):
+    """One e-mail field: the verification resend and the password reset request pages."""
+
     email = forms.EmailField(label="E-mail", max_length=254)
 
     def __init__(self, *args, **kwargs):
@@ -164,3 +166,16 @@ class AdminEmailAuthenticationForm(AdminAuthenticationForm):
     def confirm_login_allowed(self, user):
         super().confirm_login_allowed(user)
         ensure_email_verified(user)
+
+
+class NewPasswordForm(SetPasswordForm):
+    """The password reset's new password: Django's form, which runs AUTH_PASSWORD_VALIDATORS against the
+    real account (so it cannot resemble its e-mail, name or phone), with the registration's wording.
+    """
+
+    error_messages = {**SetPasswordForm.error_messages, "password_mismatch": "A két jelszó nem egyezik."}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["new_password1"].label = "Új jelszó"
+        self.fields["new_password2"].label = "Új jelszó újra"

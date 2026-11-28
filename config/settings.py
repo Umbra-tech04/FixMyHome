@@ -114,6 +114,10 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if env_bool("TRUST
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"
+# Az oldal neve a levelekben (tárgy, megszólítás). A régi (7a) levelek még a "MesterKereső" nevet írják.
+SITE_NAME = os.environ.get("SITE_NAME", "").strip() or "FixMyHome"
+# Az elfelejtett jelszó linkje ennyi másodpercig érvényes (1 óra), és a jelszócserével elhasználódik.
+PASSWORD_RESET_TIMEOUT = 60 * 60
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"

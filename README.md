@@ -89,6 +89,7 @@ Regisztráció után **nincs automatikus belépés**: a felhasználó az „Elk�
 
 - **Fejlesztésben** (`EMAIL_BACKEND=console`, ez az alapérték) a levél nem megy ki, hanem a `runserver` terminálja írja ki; a linket onnan lehet kimásolni. **Élesben** `EMAIL_BACKEND=smtp` kell az SMTP-beállításokkal (lásd `.env.example`); a jelszó (`EMAIL_HOST_PASSWORD`) csak a `.env`-be kerülhet. A console backend élesben a szerver naplójába írná a megerősítő linkeket.
   - Windows: ha a kimenet nem UTF-8 (pl. átirányítod fájlba, vagy IDE-ből futtatod), az ékezetes levelet a terminál nem tudja kiírni; ilyenkor a levél elmarad, és a naplóban `UnicodeEncodeError` jelenik meg. Megoldás: `set PYTHONUTF8=1` (PowerShell: `$env:PYTHONUTF8=1`) a `runserver` előtt.
+  - A teszteket (`python manage.py test`) viszont **`PYTHONUTF8` nélkül** futtasd: a `config/tests.py` beállítás-tesztjei tiszta környezetű gyerekfolyamatot indítanak, amely a rendszer kódolásával (cp1252) ír, a `PYTHONUTF8=1`-es szülő pedig UTF-8-ként olvasná, ezért `UnicodeDecodeError`-ral elbuknak.
 - A levelek szövege: `templates/accounts/email/` (sima szöveg, magyarul).
 - **Meglévő fiókok:** az `email_verified` mező alapértéke `True`, ezért a régi fiókok, a `seed_demo`, a `createsuperuser` és az adminban létrehozott fiókok megerősítettek. Csak a regisztrációs űrlap ad `False`-t.
 - **Mesterek:** a regisztrált mester profilja `is_available=False`-szal jön létre, így nem látszik a keresésben (`listings/geo.py`), amíg meg nem erősíti a címét; a megerősítés `True`-ra állítja.
@@ -117,6 +118,7 @@ Regisztráció után **nincs automatikus belépés**: a felhasználó az „Elk�
 |---|---|
 | megerősítő levél (regisztráció és újraküldés együtt) | 1 / perc és 5 / óra |
 | „már van fiókod” | 1 / óra |
+| jelszó-visszaállító levél (külön számláló) | 1 / perc és 5 / óra |
 
 A számlálók a Django cache-ében vannak (a kulcsban a cím SHA-256 hash-e szerepel, nem maga a cím), és az óra az első levéltől számított fix ablak. Az alapértelmezett `LocMemCache` **folyamatonként külön** számol, és újraindításkor nullázódik: N worker folyamatnál a valódi korlát akár N-szeres. Ezek a korlátok a postafiókok elárasztása ellen védenek, nem biztonsági határok. Pontos korláthoz közös cache kell (`CACHES`: Redis, Memcached vagy `DatabaseCache`). IP szerinti korlát nincs, ezért sok különböző címre egyenként a fenti korlátig lehet levelet küldetni.
 
@@ -125,13 +127,25 @@ A számlálók a Django cache-ében vannak (a kulcsban a cím SHA-256 hash-e sze
 Ha valaki **más e-mail-címével** regisztrál, a cím tulajdonosa megerősítő levelet kap. Ha a tulajdonos rákattint a linkre, pedig nem ő kérte, a fiók megerősítetté válik, és **a támadó jelszavával** lehet belépni. Ez a kockázat ismert, és elfogadjuk:
 
 - a levél kifejezetten kéri: „Ha nem te regisztráltál, ne kattints a linkre”;
-- ezt az elfelejtett jelszó funkció (7b) és a jelszócsere kezeli: a cím tulajdonosa új jelszót állít be, és a támadó jelszava ezzel érvényét veszti. **Egyik oldal sincs még kész**; addig az admin tud segíteni (jelszócsere vagy a fiók törlése az adminban);
+- ezt az elfelejtett jelszó funkció kezeli (lásd lent): a cím tulajdonosa új jelszót állít be, és a támadó jelszava ezzel érvényét veszti. A bejelentkezett felhasználó saját jelszócsere-oldala még nincs kész; addig az admin is tud segíteni (jelszócsere vagy a fiók törlése az adminban);
 - a fiókban a tulajdonosnak még nincs saját adata: a nevet és a telefonszámot a támadó adta meg.
+
+## Elfelejtett jelszó
+
+A belépés oldalon (és a tiltás oldalán) az „Elfelejtetted a jelszavad?” link a `/jelszo-visszaallitas/` oldalra visz. Ott az e-mail-cím megadása után **mindig** ugyanaz az „Ha van ilyen fiókod, elküldtük a levelet.” oldal jön (K3), akkor is, ha nincs ilyen fiók, vagy a korlát miatt nem ment levél.
+
+- **Ki kap levelet:** aktív fiók, megerősítetlen is. Inaktív fiók és **superuser nem**: a superuser jelszavát a `python manage.py changepassword <e-mail>` parancs cseréli, így egy feltört postafiókkal nem lehet teljes admin jogot szerezni. A sima staff fiókok (pl. ügyfélszolgálat) a normál visszaállítást használják. Az `/admin/` belépés oldalán ezért nincs „elfelejtett jelszó” link.
+- **A link:** a Django `PasswordResetTokenGenerator`-a készíti (`PASSWORD_RESET_TIMEOUT`: 1 óra). A token a felhasználó jelszó-hash-éhez, utolsó belépéséhez és e-mail-címéhez kötött, ezért egyszer használható: a jelszócsere (és egy közbeni belépés is) érvényteleníti. Megnyitáskor a token a munkamenetbe kerül, és az oldal a token nélküli `/jelszo-visszaallitas/<azonosító>/uj-jelszo/` címre irányít (a Django `PasswordResetConfirmView` mintája), így a token nem marad a címsorban és a `Referer` fejlécben.
+- **Az új jelszó:** ugyanazok a szabályok, mint a regisztrációnál (nem hasonlíthat a fiók e-mail-címéhez, nevéhez, telefonszámához; legalább 8 karakter, nem gyakori, nem csak szám), és a két mezőnek egyeznie kell.
+- **Sikeres csere után:** a fiók **minden meglévő munkamenete kilép** (a Django a munkamenetben a jelszó hash-éből képzett értéket tárol), és az aktuális böngésző is. Nincs automatikus belépés: a belépés oldal jön a „Jelszavad megváltozott” üzenettel. A címre vonatkozó belépési tiltás (axes) törlődik. A megerősítetlen fiók megerősítetté válik (a levél megérkezése bizonyítja, hogy övé a postafiók), és a rejtett mester profilja látható lesz.
+- **Levél:** `templates/accounts/email/password_reset_*.txt`; az oldal nevét a `SITE_NAME` beállítás adja (alapból `FixMyHome`, a `.env`-ben felülírható). A 7a levelei még a „MesterKereső” nevet írják.
+- **Korlátok és időzítés:** címenként 1 / perc és 5 / óra (lásd a fenti táblázatot és a `LocMemCache` megjegyzést). A levél minden ágon elkészül (token, sablon), csak a kiküldés marad el, de ahol levél megy ki, ott az SMTP ideje hozzáadódik: a levél nélküli válasz így is észrevehetően gyorsabb lehet. Teljesen csak a háttérben (sorból) küldött levél tüntetné el.
+- **Naplók:** a tokenes első kérés címe a hozzáférési naplóba bekerül (a `runserver` terminálban is látszik); a link 1 óráig érvényes, és csak a következő oldalon beírt új jelszóval használható. Egy levélszűrő, amely előre megnyitja a linket, nem cserél jelszót.
 
 ## Felépítés
 
 - `config/` – Django-beállítások, URL-ek
-- `accounts/` – felhasználók, regisztráció, e-mail-megerősítés, belépés, jogosultságok
+- `accounts/` – felhasználók, regisztráció, e-mail-megerősítés, belépés, elfelejtett jelszó, jogosultságok
 - `listings/` – kategóriák, hirdetések, jelentkezések, szolgáltatás-hirdetések
 - `templates/` – közös sablonok
 - `docs/superpowers/` – terv és megvalósítási terv
