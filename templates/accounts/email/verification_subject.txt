@@ -1,1 +1,1 @@
-Erősítsd meg az e-mail-címedet a MesterKeresőn
+{{ site_name }}: erősítsd meg az e-mail-címedet
