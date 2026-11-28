@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import password_validators_help_text_html, validate_password
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -17,7 +18,6 @@ from accounts.validators import (
 from listings.models import Category
 
 REGISTRATION_ROLES = [(Role.USER.value, Role.USER.label), (Role.MASTER.value, Role.MASTER.label)]
-DUPLICATE_EMAIL_MESSAGE = "Ezzel az e-mail-címmel már van fiók."
 MASTER_ONLY_FIELDS = ("profession", "service_area", "contact")
 
 
@@ -55,10 +55,8 @@ class RegistrationForm(forms.Form):
         return normalize_phone(self.cleaned_data["phone"])
 
     def clean_email(self):
-        email = self.cleaned_data["email"].strip().lower()
-        if User.objects.filter(email__iexact=email).exists():
-            raise ValidationError(DUPLICATE_EMAIL_MESSAGE)
-        return email
+        # No "already registered" error here (K3): it would tell anyone which addresses have an account.
+        return self.cleaned_data["email"].strip().lower()
 
     def clean(self):
         cleaned = super().clean()
@@ -82,15 +80,29 @@ class RegistrationForm(forms.Form):
                 self.add_error(field, "Ez a mező csak mester szerepkörnél adható meg.")
         return cleaned
 
-    def save(self) -> User | None:
-        """Create the account. Returns None (with an e-mail form error) if a parallel request took the address."""
+    def save(self) -> tuple[User, bool]:
+        """Create the account, or return the existing one for this address: (user, created).
+
+        The caller must answer both cases identically (K3). A parallel registration that wins the race for the
+        same address (IntegrityError) takes the existing-account branch too.
+        """
+        email = self.cleaned_data["email"]
+        existing = self._find_existing(email)
+        if existing is not None:
+            # Hash anyway, so this branch costs about as much time as creating an account.
+            make_password(self.cleaned_data["password1"])
+            return existing, False
         try:
-            return self._create()
+            return self._create(), True
         except IntegrityError:
-            if not User.objects.filter(email__iexact=self.cleaned_data["email"]).exists():
+            existing = User.objects.filter(email__iexact=email).first()
+            if existing is None:
                 raise  # not the e-mail race: a real bug, let it surface
-            self.add_error("email", DUPLICATE_EMAIL_MESSAGE)
-            return None
+            return existing, False
+
+    @staticmethod
+    def _find_existing(email: str) -> User | None:
+        return User.objects.filter(email__iexact=email).first()
 
     @transaction.atomic
     def _create(self) -> User:

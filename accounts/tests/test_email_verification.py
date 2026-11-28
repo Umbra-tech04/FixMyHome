@@ -3,8 +3,10 @@ import smtplib
 import time
 from unittest import mock
 
+from django.contrib.auth.hashers import make_password
 from django.core import mail, signing
-from django.test import TestCase
+from django.core.cache import cache
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from accounts.models import MasterProfile, Role, User
@@ -19,6 +21,8 @@ VERIFIED_MESSAGE = "Az e-mail-címedet megerősítettük, most már beléphetsz.
 INVALID_TITLE = "A link érvénytelen vagy lejárt"
 VERIFY_SUBJECT = "Erősítsd meg az e-mail-címedet a MesterKeresőn"
 SENT_TITLE = "Elküldtük a levelet"
+ALREADY_SUBJECT = "Valaki ezzel a címmel próbált regisztrálni a MesterKeresőn"
+HOUR = 60 * 60
 LINK_RE = re.compile(r"http://testserver(/email-megerosites/[^/\s]+/)")
 
 
@@ -179,3 +183,78 @@ class RegistrationEmailTests(TestCase):
         self.assertRedirects(response, reverse("verification_sent"))
         self.assertTrue(User.objects.filter(email="anna@example.com").exists())
         self.assertNotIn("anna@example.com", "\n".join(logs.output))
+
+
+class ExistingAddressRegistrationTests(TestCase):
+    """K3: registering with an address that already has an account must look exactly like a new registration."""
+
+    url = reverse("register")
+
+    def setUp(self):
+        cache.clear()
+        self.anna = User.objects.create_user(email="anna@example.com", password=PASSWORD, name="Anna Régi")
+
+    def register(self, client=None, **overrides):
+        return (client or self.client).post(self.url, valid_data(**overrides))
+
+    def test_existing_address_gets_the_sent_page_and_no_error(self):
+        response = self.register(name="Valaki Más")
+        self.assertRedirects(response, reverse("verification_sent"))
+        self.assertEqual(User.objects.count(), 1)
+        self.anna.refresh_from_db()
+        self.assertEqual(self.anna.name, "Anna Régi")  # the existing account is untouched
+        self.assertTrue(self.anna.check_password(PASSWORD))
+
+    def test_owner_gets_an_already_registered_email(self):
+        self.register(email="ANNA@example.com")
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(message.to, ["anna@example.com"])
+        self.assertEqual(message.subject, ALREADY_SUBJECT)
+        self.assertIn("Ehhez a címhez már tartozik fiók.", message.body)
+        self.assertIn("Ha te voltál, lépj be: http://testserver/belepes/", message.body)
+        self.assertIn("Ha nem emlékszel a jelszavadra: http://testserver/belepes/", message.body)
+        self.assertIn("Ha nem te voltál, nincs teendőd, a fiókod biztonságban van.", message.body)
+        self.assertNotRegex(message.body, LINK_RE)  # no verification token for someone else's attempt
+
+    def test_already_registered_email_is_sent_at_most_once_an_hour(self):
+        now = time.time()
+        for _ in range(3):
+            self.register()
+        self.assertEqual(len(mail.outbox), 1)
+        with mock.patch("time.time", return_value=now + HOUR + 1):
+            self.register()
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_password_is_hashed_on_the_existing_address_branch_too(self):
+        with mock.patch("accounts.forms.make_password", wraps=make_password) as hashed:
+            self.register()
+        hashed.assert_called_once_with(PASSWORD)
+
+    def test_unverified_existing_account_gets_a_new_verification_email(self):
+        User.objects.filter(pk=self.anna.pk).update(email_verified=False)
+        self.register()
+        self.assertEqual([m.subject for m in mail.outbox], [VERIFY_SUBJECT])
+        self.assertIn("Szia, Anna Régi!", mail.outbox[0].body)
+
+    def test_inactive_existing_account_gets_no_email(self):
+        User.objects.filter(pk=self.anna.pk).update(is_active=False)
+        self.assertRedirects(self.register(), reverse("verification_sent"))
+        self.assertEqual(mail.outbox, [])
+
+    def test_existing_and_new_address_responses_are_byte_identical(self):
+        existing = self.register(client=Client())
+        new = self.register(client=Client(), email="uj@example.com")
+        self.assertEqual(existing.status_code, new.status_code)
+        self.assertEqual(existing.content, new.content)
+        self.assertEqual(dict(existing.headers), dict(new.headers))
+        self.assertEqual(existing.cookies.output(), new.cookies.output())
+        existing_page = Client().get(existing["Location"])
+        new_page = Client().get(new["Location"])
+        self.assertEqual(existing_page.content, new_page.content)
+        self.assertEqual(dict(existing_page.headers), dict(new_page.headers))
+
+    def test_master_registration_with_existing_address_looks_the_same(self):
+        response = self.client.post(self.url, master_data(email="anna@example.com"))
+        self.assertRedirects(response, reverse("verification_sent"))
+        self.assertFalse(MasterProfile.objects.exists())

@@ -8,6 +8,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 
 from accounts.models import User
+from accounts.ratelimit import allow_already_registered_email
 from accounts.tokens import make_verification_token
 
 logger = logging.getLogger(__name__)
@@ -30,3 +31,17 @@ def send_verification_email(request, user: User) -> None:
     # build_absolute_uri uses the Host header, which ALLOWED_HOSTS has already checked.
     verify_url = request.build_absolute_uri(reverse("verify_email", args=[make_verification_token(user)]))
     _send(request, "verification", user, verify_url=verify_url)
+
+
+def send_existing_account_notice(request, user: User) -> None:
+    """Someone registered with an address that already has an account (K3): tell the owner, nobody else.
+
+    A still unverified owner gets a new verification e-mail instead, since "log in" would not work for them.
+    """
+    if not user.is_active:
+        return
+    if not user.email_verified:
+        send_verification_email(request, user)
+    elif allow_already_registered_email(user.email):
+        # There is no "forgotten password" page yet (7b), so that line links to the login page as well.
+        _send(request, "already_registered", user, password_reset_url=request.build_absolute_uri(reverse("login")))

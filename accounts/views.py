@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import redirect, render
 
-from accounts.emails import send_verification_email
+from accounts.emails import send_existing_account_notice, send_verification_email
 from accounts.forms import RegistrationForm
 from accounts.models import MasterProfile, User
 from accounts.tokens import user_from_verification_token
@@ -15,11 +15,14 @@ def register(request):
         return redirect("home")
     form = RegistrationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        user = form.save()
-        if user is not None:  # None: a parallel registration took the e-mail; the form shows the error
-            # No login here: the account works only after the e-mailed link has been opened.
+        user, created = form.save()
+        # K3: both branches end in the same redirect, with no message or cookie, so the response does not
+        # reveal whether the address already had an account. No login: the e-mailed link comes first.
+        if created:
             send_verification_email(request, user)
-            return redirect("verification_sent")
+        else:
+            send_existing_account_notice(request, user)
+        return redirect("verification_sent")
     return render(request, "accounts/register.html", {"form": form})
 
 
