@@ -1,4 +1,6 @@
 from django import forms
+from django.contrib.admin.forms import AdminAuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.password_validation import password_validators_help_text_html, validate_password
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -105,3 +107,29 @@ class RegistrationForm(forms.Form):
                 is_available=False,  # hidden from the search until the e-mail is verified (accounts.views.verify_email)
             )
         return user
+
+
+UNVERIFIED_LOGIN_MESSAGE = "Még nem erősítetted meg az e-mail-címedet. Nyisd meg a levelünkben kapott linket."
+
+
+def ensure_email_verified(user: User) -> None:
+    # Runs only after authenticate() accepted the password, so axes does not count it as a failed attempt,
+    # and only someone who knows the password learns that the account exists.
+    if not user.email_verified:
+        raise ValidationError(UNVERIFIED_LOGIN_MESSAGE, code="email_unverified")
+
+
+class EmailAuthenticationForm(AuthenticationForm):
+    """Site login: an unverified account cannot log in, even with the right password."""
+
+    def confirm_login_allowed(self, user):
+        super().confirm_login_allowed(user)
+        ensure_email_verified(user)
+
+
+class AdminEmailAuthenticationForm(AdminAuthenticationForm):
+    """/admin/ login: the staff check first, then the same e-mail check as on the site."""
+
+    def confirm_login_allowed(self, user):
+        super().confirm_login_allowed(user)
+        ensure_email_verified(user)

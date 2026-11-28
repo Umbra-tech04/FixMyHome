@@ -1,7 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
+from accounts.forms import AdminEmailAuthenticationForm
 from accounts.models import MasterProfile, User
+
+# The /admin/ login refuses unverified accounts too (staff accounts are verified by default).
+admin.site.login_form = AdminEmailAuthenticationForm
 
 
 @admin.register(User)
