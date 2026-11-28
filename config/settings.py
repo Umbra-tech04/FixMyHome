@@ -5,7 +5,9 @@ from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
 
-from config.security import env_bool, env_int, validate_secret_key
+from django.core.exceptions import ImproperlyConfigured
+
+from config.security import env_bool, env_choice, env_int, validate_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -137,6 +139,24 @@ AXES_DISABLE_ACCESS_LOG = True
 # Az axes.W006 IP szerinti tiltást javasol. Alagút mögött minden kérés REMOTE_ADDR-e 127.0.0.1,
 # így az IP szerinti tiltás egyszerre zárna ki mindenkit; ezért szándékosan csak e-mail szerint tiltunk.
 SILENCED_SYSTEM_CHECKS = ["axes.W006"]
+
+# Levélküldés. Fejlesztésben "console": a levelet (a megerősítő linkkel együtt) a terminál írja ki.
+# Élesben "smtp"; a jelszó csak a .env-ben (vagy a környezetben) lehet, sosem a repóban.
+EMAIL_BACKENDS = {
+    "console": "django.core.mail.backends.console.EmailBackend",
+    "smtp": "django.core.mail.backends.smtp.EmailBackend",
+}
+EMAIL_BACKEND = EMAIL_BACKENDS[env_choice("EMAIL_BACKEND", "console", tuple(EMAIL_BACKENDS))]
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "").strip()
+EMAIL_PORT = env_int("EMAIL_PORT", 587, min_value=1, max_value=65535)
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "").strip()
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+# A Django alapból korlát nélkül várna egy lassú SMTP-szerverre; így a kérés legfeljebb ennyit vár.
+EMAIL_TIMEOUT = env_int("EMAIL_TIMEOUT", 10, min_value=1)
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "").strip() or "MesterKereső <noreply@localhost>"
+if EMAIL_BACKEND == EMAIL_BACKENDS["smtp"] and not EMAIL_HOST:
+    raise ImproperlyConfigured("EMAIL_BACKEND=smtp mellett az EMAIL_HOST megadása kötelező.")
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

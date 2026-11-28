@@ -1,5 +1,7 @@
 from unittest import mock
 
+from django.core import mail
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 
@@ -33,13 +35,18 @@ class RegistrationTests(TestCase):
     url = reverse("register")
 
     def test_user_registration_creates_account(self):
+        # Changed with e-mail verification: no automatic login, the "e-mail sent" page follows instead.
         response = self.client.post(self.url, valid_data())
-        self.assertRedirects(response, reverse("home"))
+        self.assertRedirects(response, reverse("verification_sent"))
         user = User.objects.get(email="anna@example.com")
         self.assertEqual(user.role, Role.USER)
         self.assertNotEqual(user.password, PASSWORD)
         self.assertTrue(user.check_password(PASSWORD))
-        self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_registration_creates_unverified_account(self):
+        self.client.post(self.url, valid_data())
+        self.assertFalse(User.objects.get(email="anna@example.com").email_verified)
 
     def test_master_registration_creates_profile(self):
         self.client.post(self.url, master_data())
@@ -57,16 +64,18 @@ class RegistrationTests(TestCase):
         self.assertEqual(User.objects.count(), 0)
         self.assertEqual(MasterProfile.objects.count(), 0)
 
-    def test_duplicate_email_is_rejected(self):
+    # Changed with e-mail verification (K3): an existing address gets the same "e-mail sent" page as a new one,
+    # with no error message, so the form does not reveal which addresses have an account.
+    def test_duplicate_email_creates_no_account_and_shows_no_error(self):
         User.objects.create_user(email="anna@example.com", password=PASSWORD, name="Anna")
         response = self.client.post(self.url, valid_data())
-        self.assertContains(response, "Ezzel az e-mail-címmel már van fiók.")
+        self.assertRedirects(response, reverse("verification_sent"))
         self.assertEqual(User.objects.count(), 1)
 
     def test_duplicate_email_is_case_insensitive(self):
         User.objects.create_user(email="anna@example.com", password=PASSWORD, name="Anna")
         response = self.client.post(self.url, valid_data(email="Anna@Example.com"))
-        self.assertContains(response, "Ezzel az e-mail-címmel már van fiók.")
+        self.assertRedirects(response, reverse("verification_sent"))
         self.assertEqual(User.objects.count(), 1)
 
     def test_support_and_company_roles_cannot_be_chosen(self):
@@ -229,23 +238,36 @@ class PasswordSimilarityTests(TestCase):
 
 
 class DuplicateEmailRaceTests(TestCase):
-    """Two registrations with the same e-mail at the same time: the second gets a form error, not a 500."""
+    """Two registrations with the same e-mail at the same time: the loser takes the existing-address branch, not a 500.
+
+    Changed with e-mail verification (K3): this used to be a form error; now it is the same "e-mail sent" page.
+    """
 
     url = reverse("register")
 
-    def test_form_save_turns_integrity_error_into_form_error(self):
+    def setUp(self):
+        cache.clear()
+
+    def skip_precheck(self):
+        # As if both requests looked for the address before either was saved.
+        return mock.patch.object(RegistrationForm, "_find_existing", return_value=None)
+
+    def test_form_save_turns_integrity_error_into_existing_account(self):
         form = RegistrationForm(valid_data())
         self.assertTrue(form.is_valid(), form.errors)
-        User.objects.create_user(email="anna@example.com", password=PASSWORD, name="Anna")  # the other request wins
-        self.assertIsNone(form.save())
-        self.assertEqual(form.errors["email"], ["Ezzel az e-mail-címmel már van fiók."])
+        winner = User.objects.create_user(email="anna@example.com", password=PASSWORD, name="Anna")
+        with self.skip_precheck():
+            self.assertEqual(form.save(), (winner, False))
+        self.assertFalse(form.errors)
         self.assertEqual(User.objects.count(), 1)
 
-    def test_view_shows_same_message_instead_of_500(self):
+    def test_view_shows_the_same_sent_page_instead_of_500(self):
         User.objects.create_user(email="anna@example.com", password=PASSWORD, name="Anna")
-        # Skip the pre-check, as if both requests passed it before either was saved.
-        with mock.patch.object(RegistrationForm, "clean_email", lambda form: form.cleaned_data["email"].lower()):
+        with self.skip_precheck():
             response = self.client.post(self.url, valid_data())
-        self.assertContains(response, "Ezzel az e-mail-címmel már van fiók.")
+        self.assertRedirects(response, reverse("verification_sent"))
         self.assertEqual(User.objects.count(), 1)
         self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertEqual(
+            [m.subject for m in mail.outbox], ["Valaki ezzel a címmel próbált regisztrálni a MesterKeresőn"],
+        )

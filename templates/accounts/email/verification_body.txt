@@ -1,0 +1,11 @@
+{% autoescape off %}Szia, {{ user.name }}!
+
+Köszönjük, hogy regisztráltál a MesterKeresőn. Az e-mail-címed megerősítéséhez nyisd meg ezt a linket:
+
+{{ verify_url }}
+
+A link 24 óráig érvényes. Ha nem te regisztráltál, ne kattints a linkre, és hagyd figyelmen kívül ezt a levelet.
+
+Üdvözlettel:
+a MesterKereső csapata
+{% endautoescape %}

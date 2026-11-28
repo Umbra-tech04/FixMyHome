@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 
 from accounts.validators import normalize_name, normalize_phone, validate_email_address, validate_name, validate_phone
 
@@ -44,6 +44,9 @@ class User(AbstractUser):
     # Új adat E.164 alakban (+381641234567); a régi adatokat nem alakítjuk át, csak a következő mentéskor.
     phone = models.CharField("telefon", max_length=30, blank=True, validators=[validate_phone])
     role = models.CharField("szerepkör", max_length=20, choices=Role.choices, default=Role.USER)
+    # True by default: existing rows, seed_demo, the admin and createsuperuser all give verified accounts.
+    # Only the public registration form sets it to False explicitly (accounts.forms.RegistrationForm).
+    email_verified = models.BooleanField("e-mail megerősítve", default=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["name"]
@@ -79,3 +82,17 @@ class MasterProfile(models.Model):
 
     def __str__(self):
         return f"{self.user} ({self.profession})"
+
+
+def mark_email_verified(user_ids) -> int:
+    """Verify these accounts and show their master profiles in the search; returns how many changed.
+
+    Accounts that are already verified are left alone, so a reused link (or a repeated admin action)
+    cannot undo a master's later "unavailable" choice.
+    """
+    with transaction.atomic():
+        pending = list(User.objects.filter(pk__in=user_ids, email_verified=False).values_list("pk", flat=True))
+        User.objects.filter(pk__in=pending).update(email_verified=True)
+        # Unverified masters are hidden from the search (is_available=False since registration).
+        MasterProfile.objects.filter(user_id__in=pending).update(is_available=True)
+    return len(pending)

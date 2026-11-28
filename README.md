@@ -83,10 +83,55 @@ python manage.py axes_reset_username anna@example.com   # egy fiók feloldása (
 python manage.py axes_reset                             # minden tiltás és próbálkozás törlése
 ```
 
+## E-mail-megerősítés
+
+Regisztráció után **nincs automatikus belépés**: a felhasználó az „Elküldtük a levelet” oldalra kerül, és levelet kap egy 24 óráig érvényes megerősítő linkkel. Amíg nem kattint rá, helyes jelszóval sem léphet be (sem a `/belepes/`, sem az `/admin/` oldalon); a hibaüzenetben van link az újraküldéshez (`/email-megerosites/ujrakuldes/`).
+
+- **Fejlesztésben** (`EMAIL_BACKEND=console`, ez az alapérték) a levél nem megy ki, hanem a `runserver` terminálja írja ki; a linket onnan lehet kimásolni. **Élesben** `EMAIL_BACKEND=smtp` kell az SMTP-beállításokkal (lásd `.env.example`); a jelszó (`EMAIL_HOST_PASSWORD`) csak a `.env`-be kerülhet. A console backend élesben a szerver naplójába írná a megerősítő linkeket.
+  - Windows: ha a kimenet nem UTF-8 (pl. átirányítod fájlba, vagy IDE-ből futtatod), az ékezetes levelet a terminál nem tudja kiírni; ilyenkor a levél elmarad, és a naplóban `UnicodeEncodeError` jelenik meg. Megoldás: `set PYTHONUTF8=1` (PowerShell: `$env:PYTHONUTF8=1`) a `runserver` előtt.
+- A levelek szövege: `templates/accounts/email/` (sima szöveg, magyarul).
+- **Meglévő fiókok:** az `email_verified` mező alapértéke `True`, ezért a régi fiókok, a `seed_demo`, a `createsuperuser` és az adminban létrehozott fiókok megerősítettek. Csak a regisztrációs űrlap ad `False`-t.
+- **Mesterek:** a regisztrált mester profilja `is_available=False`-szal jön létre, így nem látszik a keresésben (`listings/geo.py`), amíg meg nem erősíti a címét; a megerősítés `True`-ra állítja.
+- **Admin:** a felhasználók listájában szűrhető az „e-mail megerősítve” mező, és a „Kijelöltek e-mail-címének megerősítése” művelettel kézzel is megerősíthető (ez a mester profilját is láthatóvá teszi). A szerkesztőoldalon a pipa átállítása ezt **nem** teszi; ott a profil „most elérhető” mezőjét külön kell állítani.
+
+### Biztonság
+
+- **A token:** a `django.core.signing` írja alá a `SECRET_KEY`-jel, saját salttal (`accounts.email-verification`), adatbázis-tábla nélkül. A tartalma a felhasználó azonosítója és az e-mail-cím kulcsolt hash-e (HMAC-SHA256 a `SECRET_KEY`-jel és saját salttal, a kisbetűs, szóközök nélküli címből), ezért címváltozásnál érvénytelen lesz. A hamisított, lejárt vagy más felhasználóhoz tartozó tokenre hibaoldal jön. Az újrafelhasználás ártalmatlan: a már megerősített fiókon nem változtat semmit. A `SECRET_KEY` cseréje minden kiküldött linket érvénytelenít.
+- **A link nem léptet be**, csak megerősít, majd a belépési oldalra irányít (így a token a címsorból is eltűnik). Ha egy levélszűrő előre megnyitja a linket, az is megerősíti a címet. Ez csak annyit bizonyít, hogy a levél megérkezett a postafiókba, ezért elfogadjuk.
+- **Host-fejléc:** a link abszolút címét a `request.build_absolute_uri` adja a kérés `Host` fejlécéből. Az `ALLOWED_HOSTS` véd: idegen hostra 400 jön, és nem megy ki levél. Ezért kell az `ALLOWED_HOSTS`-ba a **pontos** cím: egy `*` vagy `.trycloudflare.com` mellett egy támadó a saját domainjére mutató linket küldethetne valaki más postafiókjába.
+- **Naplók:** a token benne van az URL-ben, ezért a webszerver hozzáférési naplójában (a `runserver` terminálban is) látszik. Csak 24 óráig érvényes, és csak megerősíteni lehet vele, belépni nem. A `signing` aláír, de nem titkosít: a token első része base64-es JSON, ezért került bele a cím helyett csak a kulcsolt hash-e. A naplóból így a felhasználó azonosítója olvasható ki, a cím nem, és a `SECRET_KEY` ismerete nélkül egy gyanított címet sem lehet a tokennel összevetni. Saját kódunk sem a tokent, sem a címzettet nem naplózza (levélküldési hibánál csak a hiba típusát és a felhasználó azonosítóját).
+- **Belépés és axes:** a megerősítetlen fiók elutasítása a jelszó ellenőrzése *után* történik (`confirm_login_allowed`), ezért az axes nem számolja sikertelen próbának. Rossz jelszónál a szokásos hibaüzenet jön, így az, hogy „van fiók, csak nincs megerősítve”, csak a jelszó ismerőjének derül ki.
+
+### Nem derül ki, van-e fiók egy címhez (K3)
+
+- **Regisztráció:** ha a címhez már van fiók, **ugyanaz** az átirányítás és oldal jön, mint új címnél, hibaüzenet nélkül (a válasz bájtra azonos, erre teszt van). A cím tulajdonosa „Valaki ezzel a címmel próbált regisztrálni” levelet kap (címenként legfeljebb óránként egyet). Ha a meglévő fiók még nincs megerősítve, helyette új megerősítő levelet kap, mert neki a „lépj be” nem segítene. Inaktív fióknak nem megy levél. A párhuzamos regisztráció (`IntegrityError`) is erre az ágra fut.
+- **Újraküldés:** a válasz mindig „Ha van ilyen fiók, elküldtük a levelet.”, akkor is, ha nincs ilyen fiók, már meg van erősítve, vagy a korlát miatt nem ment levél.
+- **Maradó különbség az időzítésben.** A meglévő-cím ágon is lefut a jelszó hashelése (ez a lassú lépés), így a két ág ideje közel van egymáshoz. Ami marad:
+  - az új fióknál van adatbázis-írás (INSERT, mesternél kettő), a meglévőnél nincs;
+  - ahol levél megy ki, ott az SMTP-kapcsolat ideje is hozzáadódik; ahol nem (a korlát miatt, inaktív fióknál, vagy újraküldésnél nem létező címre), ott a válasz észrevehetően gyorsabb;
+  - teljesen csak az tüntetné el, ha a levelek háttérben (sorból, pl. Celery) mennének ki. Ez nincs megcsinálva.
+
+### Levélkorlátok
+
+| Levél | Korlát (címenként) |
+|---|---|
+| megerősítő levél (regisztráció és újraküldés együtt) | 1 / perc és 5 / óra |
+| „már van fiókod” | 1 / óra |
+
+A számlálók a Django cache-ében vannak (a kulcsban a cím SHA-256 hash-e szerepel, nem maga a cím), és az óra az első levéltől számított fix ablak. Az alapértelmezett `LocMemCache` **folyamatonként külön** számol, és újraindításkor nullázódik: N worker folyamatnál a valódi korlát akár N-szeres. Ezek a korlátok a postafiókok elárasztása ellen védenek, nem biztonsági határok. Pontos korláthoz közös cache kell (`CACHES`: Redis, Memcached vagy `DatabaseCache`). IP szerinti korlát nincs, ezért sok különböző címre egyenként a fenti korlátig lehet levelet küldetni.
+
+### Ismert, elfogadott kockázat: előzetes regisztráció (pre-hijacking)
+
+Ha valaki **más e-mail-címével** regisztrál, a cím tulajdonosa megerősítő levelet kap. Ha a tulajdonos rákattint a linkre, pedig nem ő kérte, a fiók megerősítetté válik, és **a támadó jelszavával** lehet belépni. Ez a kockázat ismert, és elfogadjuk:
+
+- a levél kifejezetten kéri: „Ha nem te regisztráltál, ne kattints a linkre”;
+- ezt az elfelejtett jelszó funkció (7b) és a jelszócsere kezeli: a cím tulajdonosa új jelszót állít be, és a támadó jelszava ezzel érvényét veszti. **Egyik oldal sincs még kész**; addig az admin tud segíteni (jelszócsere vagy a fiók törlése az adminban);
+- a fiókban a tulajdonosnak még nincs saját adata: a nevet és a telefonszámot a támadó adta meg.
+
 ## Felépítés
 
 - `config/` – Django-beállítások, URL-ek
-- `accounts/` – felhasználók, regisztráció, belépés, jogosultságok
+- `accounts/` – felhasználók, regisztráció, e-mail-megerősítés, belépés, jogosultságok
 - `listings/` – kategóriák, hirdetések, jelentkezések, szolgáltatás-hirdetések
 - `templates/` – közös sablonok
 - `docs/superpowers/` – terv és megvalósítási terv

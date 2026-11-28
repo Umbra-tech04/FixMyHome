@@ -11,7 +11,7 @@ from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from dotenv import dotenv_values
 
-from config.security import DEV_SECRET_KEYS, env_bool, env_int, validate_secret_key
+from config.security import DEV_SECRET_KEYS, env_bool, env_choice, env_int, validate_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Csak tesztekhez: hosszú, de nem titkos kulcs.
@@ -91,6 +91,26 @@ class EnvIntTests(SimpleTestCase):
         with mock.patch.dict(os.environ, {"NUM": "0"}):
             with self.assertRaisesMessage(ImproperlyConfigured, "NUM"):
                 env_int("NUM", 7, min_value=1)
+
+    def test_rejects_value_above_maximum(self):
+        with mock.patch.dict(os.environ, {"NUM": "70000"}):
+            with self.assertRaisesMessage(ImproperlyConfigured, "NUM"):
+                env_int("NUM", 7, min_value=1, max_value=65535)
+
+
+class EnvChoiceTests(SimpleTestCase):
+    def test_missing_value_uses_default(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(env_choice("MODE", "console", ("console", "smtp")), "console")
+
+    def test_reads_allowed_value(self):
+        with mock.patch.dict(os.environ, {"MODE": " smtp "}):
+            self.assertEqual(env_choice("MODE", "console", ("console", "smtp")), "smtp")
+
+    def test_rejects_other_values(self):
+        with mock.patch.dict(os.environ, {"MODE": "sendgrid"}):
+            with self.assertRaisesMessage(ImproperlyConfigured, "MODE"):
+                env_choice("MODE", "console", ("console", "smtp"))
 
 
 TUNNEL_HOST = "pelda.trycloudflare.com"
@@ -228,3 +248,53 @@ class SettingsEnvironmentTests(TestCase):
             result.stdout.strip(),
             "['.trycloudflare.com', 'localhost'] ['https://*.trycloudflare.com']",
         )
+
+
+EMAIL_EXPR = "s.EMAIL_BACKEND, s.EMAIL_HOST, s.EMAIL_PORT, s.EMAIL_USE_TLS, s.EMAIL_TIMEOUT"
+
+
+class EmailSettingsTests(TestCase):
+    def test_console_backend_by_default(self):
+        result = load_settings({"DEBUG": "1"}, expr=EMAIL_EXPR)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            result.stdout.strip(), "django.core.mail.backends.console.EmailBackend  587 True 10",
+        )
+
+    def test_smtp_settings_come_from_environment(self):
+        env = {
+            "DEBUG": "1", "EMAIL_BACKEND": "smtp", "EMAIL_HOST": "smtp.example.com", "EMAIL_PORT": "2525",
+            "EMAIL_USE_TLS": "0", "EMAIL_HOST_USER": "mailer", "EMAIL_HOST_PASSWORD": "helyorzo",
+            "DEFAULT_FROM_EMAIL": "MesterKereso <noreply@example.com>",
+        }
+        result = load_settings(
+            env, expr=EMAIL_EXPR + ", s.EMAIL_HOST_USER, s.EMAIL_HOST_PASSWORD == 'helyorzo', s.DEFAULT_FROM_EMAIL",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            result.stdout.strip(),
+            "django.core.mail.backends.smtp.EmailBackend smtp.example.com 2525 False 10 mailer True "
+            "MesterKereso <noreply@example.com>",
+        )
+
+    def test_unknown_backend_stops_startup(self):
+        result = load_settings({"DEBUG": "1", "EMAIL_BACKEND": "sendgrid"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("EMAIL_BACKEND", result.stderr)
+
+    def test_smtp_without_host_stops_startup(self):
+        result = load_settings({"DEBUG": "1", "EMAIL_BACKEND": "smtp"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("EMAIL_HOST", result.stderr)
+
+    def test_invalid_port_stops_startup(self):
+        for port in ("abc", "0", "70000"):
+            with self.subTest(port=port):
+                result = load_settings({"DEBUG": "1", "EMAIL_PORT": port})
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("EMAIL_PORT", result.stderr)
+
+    def test_password_is_not_in_startup_errors(self):
+        result = load_settings({"DEBUG": "1", "EMAIL_BACKEND": "smtp", "EMAIL_HOST_PASSWORD": "titkos-jelszo-123"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("titkos-jelszo-123", result.stderr)
