@@ -25,6 +25,41 @@ Helyben SQLite (nulla beállítás). Élesben PostgreSQL: állítsd be a `DATABA
 
 Helyi PostgreSQL (opcionális): `docker compose up -d db`, majd a `.env`-be: `DATABASE_URL=postgres://fixmyhome:fixmyhome@localhost:5432/fixmyhome`.
 
+### Adatbázis-szabályok
+
+A fontos szabályokat az adatbázis is kikényszeríti (`accounts/0006_db_constraints`, `listings/0004_db_constraints`), nem csak a Python kód. Így a `queryset.update()`, a `bulk_create()`, a shell, a nyers SQL vagy egy import sem vihet be rossz adatot (`IntegrityError` jön). Az admin és a modellűrlapok ugyanezt magyar hibaüzenettel mutatják (`violation_error_message`).
+
+- **E-mail:** kis- és nagybetűtől függetlenül egyedi (`UniqueConstraint(Lower("email"))`, a `unique=True` mellett), és nem lehet üres.
+- **Értékkészlet:** `User.role`, `Ad.status`, `ServiceListing.price_category` csak a kódban felsorolt értékek egyike lehet. Új érték felvételekor a `makemigrations` új migrációt készít a szabályhoz; a `makemigrations --check` jelzi, ha ez elmaradt.
+- **Koordináták** (`Ad`, `MasterProfile`): szélesség -90..90, hosszúság -180..180, és vagy mindkettő meg van adva, vagy egyik sem.
+- **Hirdetés:** a gazdája nem lehet a kiválasztott mester.
+- **Üres szöveg:** az `Ad` és a `ServiceListing` címe, valamint a `Category` neve nem lehet üres (`""`). A csak szóközből álló szöveget az adatbázis nem tiltja; az űrlapok levágják a szóközöket.
+- **Index:** `Ad(category, status)` a mester kezdőoldalának lekérdezéséhez (`listings.geo.nearby_open_ads`: nyitott hirdetések a szakmájában). Más index nem került be: a többi lekérdezést a meglévő indexek kiszolgálják (idegen kulcsok, egyedi megszorítások).
+- **Szándékosan nincs szabály** az `Ad.status` és az `Ad.chosen_master` kapcsolatára (pl. „folyamatban lévőnek kell mester”), és az `on_delete` sem változott: a mester fiókjának törlése (`SET_NULL`) a folyamatban lévő munkáin nullázza a `chosen_master`-t. A szerepkör- és törlési szabályok csapatdöntések (5. PR).
+
+**Migráláskor:** a migráció előbb ellenőrzi a meglévő adatokat. Ha valamelyik sor sérti az új szabályokat (pl. két fiók e-mail-címe csak kis/nagybetűben különbözik), érthető hibaüzenettel megáll, felsorolja a sorokat, és **semmit nem változtat** (nem töröl, nem egyesít). Ilyenkor kézzel (pl. az adminban) kell javítani, majd újra futtatni a `python manage.py migrate`-et. A migráció visszafordítható (`migrate accounts 0005`, `migrate listings 0003`). A `seed_demo` adatai megfelelnek a szabályoknak.
+
+**Ismert korlátok:**
+
+- SQLite-on a `lower()` csak az ASCII betűket alakítja kisbetűssé, ezért ott az ékezetes nagybetűket (pl. egy `Á`-t a domainben) az adatbázis-szabály nem veszi észre. A `User.save()` és a PostgreSQL igen.
+- A bejelentkezés és a regisztráció `email__iexact`-tel keres, ami PostgreSQL-en `UPPER(email)`. Ezt a kisbetűs index nem gyorsítja. A javítás (kisbetűs, pontos egyezéssel keresni) külön feladat.
+- Az admin a kis/nagybetűs duplikált e-mailre két hibát mutat: egy általánosat (az új szabályé) és egy mezőhibát (a `unique=True`-é).
+- Ha valaki a hirdetés vagy a mesterprofil rejtett koordinátamezőjét kézzel tartományon kívüli értékre írja, az űrlap két hibát mutat (a település mezőn és általános hibaként). A rendes böngészős használatban ez nem fordul elő.
+
+### PostgreSQL-próba (nincs ellenőrizve)
+
+A szabályok és a migrációk csak hordozható eszközöket használnak (`Lower`, `Q`, `F`, sima `Index`), de **PostgreSQL-en még senki nem futtatta őket**: a fejlesztő gépén nem volt sem PostgreSQL, sem Docker. Aki tudja, futtassa le így (Docker kell hozzá):
+
+```bash
+docker run --rm -d --name fixmyhome-pg -e POSTGRES_DB=fixmyhome -e POSTGRES_USER=fixmyhome \
+  -e POSTGRES_PASSWORD=fixmyhome -p 5432:5432 postgres:16
+export DATABASE_URL=postgres://fixmyhome:fixmyhome@localhost:5432/fixmyhome   # PowerShell: $env:DATABASE_URL="postgres://..."
+python manage.py migrate && python manage.py seed_demo && python manage.py test --shuffle
+docker stop fixmyhome-pg   # a --rm miatt a konténer és az adatai törlődnek
+```
+
+Ha már fut egy PostgreSQL, elég a `DATABASE_URL`-t beállítani. A tesztekhez a felhasználónak adatbázist kell tudnia létrehozni (`test_fixmyhome`). Az SQLite-specifikus indexteszt PostgreSQL-en kimarad (skip).
+
 ## Bemutató adatok
 
 `python manage.py seed_demo` (többször is futtatható). Minden fiók jelszava: `test1234`, ezért **éles vagy alagutas környezetben tilos futtatni**.
