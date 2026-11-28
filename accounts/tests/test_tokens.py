@@ -3,17 +3,24 @@ import time
 from unittest import mock
 
 from django.core import signing
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from django.utils.crypto import salted_hmac
 
 from accounts.models import User
-from accounts.tokens import VERIFICATION_SALT, make_verification_token, user_from_verification_token
+from accounts.tokens import (
+    EMAIL_HASH_SALT,
+    VERIFICATION_SALT,
+    email_hash,
+    make_verification_token,
+    user_from_verification_token,
+)
 
 PASSWORD = "Jelszo-12345"
 DAY = 24 * 60 * 60
 
 
-def sha256(email):
-    return hashlib.sha256(email.encode()).hexdigest()
+def keyed(email):
+    return salted_hmac(EMAIL_HASH_SALT, email, algorithm="sha256").hexdigest()
 
 
 class VerificationTokenTests(TestCase):
@@ -40,7 +47,7 @@ class VerificationTokenTests(TestCase):
     def test_tampered_token_is_rejected(self):
         token = make_verification_token(self.anna)
         payload, rest = token.split(":", 1)
-        forged_json = '{"uid":%d,"email_hash":"%s"}' % (self.bela.pk, sha256("bela@example.com"))
+        forged_json = '{"uid":%d,"email_hash":"%s"}' % (self.bela.pk, keyed("bela@example.com"))
         forged_payload = signing.b64_encode(forged_json.encode()).decode()
         for forged in (token[:-1] + ("A" if token[-1] != "A" else "B"), f"{forged_payload}:{rest}", payload):
             with self.subTest(forged=forged):
@@ -52,14 +59,14 @@ class VerificationTokenTests(TestCase):
                 self.assertIsNone(user_from_verification_token(garbage))
 
     def test_token_signed_with_another_salt_is_rejected(self):
-        payload = {"uid": self.anna.pk, "email_hash": sha256(self.anna.email)}
+        payload = {"uid": self.anna.pk, "email_hash": keyed(self.anna.email)}
         for salt in ("django.core.signing", "accounts.other-purpose"):
             with self.subTest(salt=salt):
                 self.assertIsNone(user_from_verification_token(signing.dumps(payload, salt=salt)))
 
     def test_token_of_another_user_does_not_match(self):
         # Even a correctly signed payload is refused if the id and the e-mail belong to different users.
-        mixed = signing.dumps({"uid": self.bela.pk, "email_hash": sha256(self.anna.email)}, salt=VERIFICATION_SALT)
+        mixed = signing.dumps({"uid": self.bela.pk, "email_hash": keyed(self.anna.email)}, salt=VERIFICATION_SALT)
         self.assertIsNone(user_from_verification_token(mixed))
 
     def test_email_change_invalidates_token(self):
@@ -74,7 +81,7 @@ class VerificationTokenTests(TestCase):
         self.assertIsNone(user_from_verification_token(token))
 
     def test_malformed_payload_is_rejected(self):
-        anna_hash = sha256(self.anna.email)
+        anna_hash = keyed(self.anna.email)
         payloads = (
             ["x"], 42, {"uid": "abc", "email_hash": anna_hash}, {"email_hash": anna_hash}, {"uid": self.anna.pk},
             {"uid": self.anna.pk, "email_hash": 42},
@@ -84,10 +91,10 @@ class VerificationTokenTests(TestCase):
             with self.subTest(payload=payload):
                 self.assertIsNone(user_from_verification_token(signing.dumps(payload, salt=VERIFICATION_SALT)))
 
-    def test_token_holds_a_hash_of_the_address_not_the_address(self):
+    def test_token_holds_a_keyed_hash_of_the_address_not_the_address(self):
         token = make_verification_token(self.anna)
         payload = signing.loads(token, salt=VERIFICATION_SALT)
-        self.assertEqual(payload, {"uid": self.anna.pk, "email_hash": sha256("anna@example.com")})
+        self.assertEqual(payload, {"uid": self.anna.pk, "email_hash": keyed("anna@example.com")})
         decoded = signing.b64_decode(token.split(":", 1)[0].encode()).decode()
         self.assertNotIn("anna@example.com", decoded)
         self.assertNotIn("anna", token)
@@ -97,3 +104,16 @@ class VerificationTokenTests(TestCase):
         token = make_verification_token(self.anna)
         User.objects.filter(pk=self.anna.pk).update(email="  Anna@Example.com ")
         self.assertEqual(user_from_verification_token(token).pk, self.anna.pk)
+
+    def test_hash_is_keyed_so_a_guessed_address_cannot_be_checked(self):
+        # Without SECRET_KEY nobody can compute the value for a guessed address and compare it with a logged token.
+        token_hash = signing.loads(make_verification_token(self.anna), salt=VERIFICATION_SALT)["email_hash"]
+        self.assertNotEqual(token_hash, hashlib.sha256(b"anna@example.com").hexdigest())
+        self.assertEqual(len(token_hash), 64)  # HMAC-SHA256, not the SHA-1 default of salted_hmac
+
+    def test_hash_depends_on_secret_key_and_salt(self):
+        with override_settings(SECRET_KEY="another-secret-key-for-this-test-only-0123456789"):
+            other_key = email_hash("anna@example.com")
+        self.assertNotEqual(email_hash("anna@example.com"), other_key)
+        other_salt = salted_hmac(VERIFICATION_SALT, "anna@example.com", algorithm="sha256").hexdigest()
+        self.assertNotEqual(email_hash("anna@example.com"), other_salt)

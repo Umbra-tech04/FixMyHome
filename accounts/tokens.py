@@ -1,27 +1,29 @@
 """Signed, expiring e-mail verification tokens (django.core.signing, no database table).
 
-The payload holds the user's id and a SHA-256 hash of the e-mail address, so a token stops working when the
-address changes. Signing does not encrypt, and the token ends up in URLs and access logs; the hash keeps the
-address itself out of them.
+The payload holds the user's id and a keyed hash (HMAC-SHA256 with SECRET_KEY) of the e-mail address, so a
+token stops working when the address changes. Signing does not encrypt, and the token ends up in URLs and
+access logs; the keyed hash keeps the address out of them, and without SECRET_KEY nobody can check a guessed
+address against a logged token.
 The salt keeps these tokens apart from every other signed value made with the same SECRET_KEY.
 Using a token twice is harmless: verifying an already verified account changes nothing.
 """
 
-import hashlib
 import hmac
 from datetime import timedelta
 
 from django.core import signing
+from django.utils.crypto import salted_hmac
 
 from accounts.models import User
 
 VERIFICATION_SALT = "accounts.email-verification"
 VERIFICATION_MAX_AGE = timedelta(hours=24)
+EMAIL_HASH_SALT = "accounts.email-verification.email-hash"
 
 
 def email_hash(email: str) -> str:
-    """SHA-256 (hex) of the trimmed, lowercased address."""
-    return hashlib.sha256(email.strip().lower().encode()).hexdigest()
+    """HMAC-SHA256 (hex) of the trimmed, lowercased address, keyed with SECRET_KEY and its own salt."""
+    return salted_hmac(EMAIL_HASH_SALT, email.strip().lower(), algorithm="sha256").hexdigest()
 
 
 def make_verification_token(user: User) -> str:
