@@ -178,6 +178,14 @@ class RegistrationEmailTests(TestCase):
         self.assertFalse(master.master_profile.is_available)
         self.assertNotIn(master, [p.user for p in nearby_masters(*CITIES["Szabadka"], 50)])
 
+    def test_console_encoding_error_still_shows_sent_page(self):
+        # The console backend on a non-UTF-8 stdout (e.g. Windows cp1252) cannot print "ő".
+        broken_console = UnicodeEncodeError("charmap", "ő", 0, 1, "character maps to <undefined>")
+        with mock.patch("accounts.emails.send_mail", side_effect=broken_console),                 self.assertLogs("accounts.emails", level="ERROR") as logs:
+            response = self.register()
+        self.assertRedirects(response, reverse("verification_sent"))
+        self.assertIn("UnicodeEncodeError", logs.output[0])
+
     def test_mail_failure_still_shows_sent_page_and_logs_no_address(self):
         refused = smtplib.SMTPRecipientsRefused({"anna@example.com": (550, b"anna@example.com unknown")})
         failing_send = mock.patch("accounts.emails.send_mail", side_effect=refused)

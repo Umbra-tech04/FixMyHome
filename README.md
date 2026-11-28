@@ -88,6 +88,7 @@ python manage.py axes_reset                             # minden tiltás és pr�
 Regisztráció után **nincs automatikus belépés**: a felhasználó az „Elküldtük a levelet” oldalra kerül, és levelet kap egy 24 óráig érvényes megerősítő linkkel. Amíg nem kattint rá, helyes jelszóval sem léphet be (sem a `/belepes/`, sem az `/admin/` oldalon); a hibaüzenetben van link az újraküldéshez (`/email-megerosites/ujrakuldes/`).
 
 - **Fejlesztésben** (`EMAIL_BACKEND=console`, ez az alapérték) a levél nem megy ki, hanem a `runserver` terminálja írja ki; a linket onnan lehet kimásolni. **Élesben** `EMAIL_BACKEND=smtp` kell az SMTP-beállításokkal (lásd `.env.example`); a jelszó (`EMAIL_HOST_PASSWORD`) csak a `.env`-be kerülhet. A console backend élesben a szerver naplójába írná a megerősítő linkeket.
+  - Windows: ha a kimenet nem UTF-8 (pl. átirányítod fájlba, vagy IDE-ből futtatod), az ékezetes levelet a terminál nem tudja kiírni; ilyenkor a levél elmarad, és a naplóban `UnicodeEncodeError` jelenik meg. Megoldás: `set PYTHONUTF8=1` (PowerShell: `$env:PYTHONUTF8=1`) a `runserver` előtt.
 - A levelek szövege: `templates/accounts/email/` (sima szöveg, magyarul).
 - **Meglévő fiókok:** az `email_verified` mező alapértéke `True`, ezért a régi fiókok, a `seed_demo`, a `createsuperuser` és az adminban létrehozott fiókok megerősítettek. Csak a regisztrációs űrlap ad `False`-t.
 - **Mesterek:** a regisztrált mester profilja `is_available=False`-szal jön létre, így nem látszik a keresésben (`listings/geo.py`), amíg meg nem erősíti a címét; a megerősítés `True`-ra állítja.

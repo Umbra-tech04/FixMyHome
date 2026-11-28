@@ -21,8 +21,9 @@ def _send(request, template: str, user: User, **context) -> None:
     body = render_to_string(f"accounts/email/{template}_body.txt", context)
     try:
         send_mail(subject, body, None, [user.email])
-    except (smtplib.SMTPException, OSError) as error:
+    except (smtplib.SMTPException, OSError, UnicodeError) as error:
         # Same response either way: the user can ask for a new e-mail on the resend page.
+        # UnicodeError: the console backend on a non-UTF-8 stdout (Windows; fix with PYTHONUTF8=1).
         # Only the exception type is logged: e.g. SMTPRecipientsRefused would print the address.
         logger.error("Could not send the %s e-mail (user id %s): %s", template, user.pk, type(error).__name__)
 
