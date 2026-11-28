@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import F, Q
+
+from config.db_constraints import coordinate_constraints, not_empty, one_of
 
 
 class Category(models.Model):
@@ -8,6 +11,7 @@ class Category(models.Model):
 
     class Meta:
         ordering = ["name"]
+        constraints = [not_empty("name", "listings_category_name_not_empty", "A név nem lehet üres.")]
         verbose_name = "kategória"
         verbose_name_plural = "kategóriák"
 
@@ -15,12 +19,16 @@ class Category(models.Model):
         return self.name
 
 
+# Module level, so Meta.constraints can see it (a nested Meta does not see the class body); use it as Ad.Status.
+class AdStatus(models.TextChoices):
+    OPEN = "open", "Nyitott"
+    IN_PROGRESS = "in_progress", "Folyamatban"
+    DONE = "done", "Lezárva"
+    WITHDRAWN = "withdrawn", "Visszavonva"
+
+
 class Ad(models.Model):
-    class Status(models.TextChoices):
-        OPEN = "open", "Nyitott"
-        IN_PROGRESS = "in_progress", "Folyamatban"
-        DONE = "done", "Lezárva"
-        WITHDRAWN = "withdrawn", "Visszavonva"
+    Status = AdStatus
 
     # Az összes állapotszabály itt van: csak előre lehet lépni, a lezárt/visszavont végállapot.
     TRANSITIONS = {
@@ -49,6 +57,24 @@ class Ad(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        # Deliberately no rule tying status to chosen_master (e.g. "in progress needs a master"), and on_delete
+        # stays as is: deleting a master's account empties chosen_master (SET_NULL). Role and deletion rules
+        # are a team decision (PR 5).
+        constraints = [
+            *coordinate_constraints("listings_ad"),
+            one_of("status", AdStatus, "listings_ad_status_valid", "Érvénytelen állapot."),
+            models.CheckConstraint(
+                condition=Q(chosen_master__isnull=True) | ~Q(owner=F("chosen_master")),
+                name="listings_ad_owner_not_chosen_master",
+                violation_error_message="A hirdetés gazdája nem lehet a kiválasztott mester.",
+            ),
+            not_empty("title", "listings_ad_title_not_empty", "A cím nem lehet üres."),
+        ]
+        indexes = [
+            # listings.geo.nearby_open_ads (the master's home page): status='open' AND category_id=?. The FK index
+            # on category alone also walks the category's done and withdrawn ads, which only grow.
+            models.Index(fields=["category", "status"], name="ad_category_status_idx"),
+        ]
         verbose_name = "hirdetés"
         verbose_name_plural = "hirdetések"
 
@@ -121,11 +147,15 @@ class Application(models.Model):
         return self.STATUS_BADGES[self.status]
 
 
+# Module level for the same reason as AdStatus; use it as ServiceListing.PriceCategory.
+class PriceCategory(models.TextChoices):
+    LOW = "low", "Olcsó"
+    MEDIUM = "medium", "Közepes"
+    HIGH = "high", "Drága"
+
+
 class ServiceListing(models.Model):
-    class PriceCategory(models.TextChoices):
-        LOW = "low", "Olcsó"
-        MEDIUM = "medium", "Közepes"
-        HIGH = "high", "Drága"
+    PriceCategory = PriceCategory
 
     master = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="services")
     title = models.CharField("megnevezés", max_length=150)
@@ -138,6 +168,11 @@ class ServiceListing(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            one_of("price_category", PriceCategory, "listings_servicelisting_price_category_valid",
+                   "Érvénytelen árkategória."),
+            not_empty("title", "listings_servicelisting_title_not_empty", "A megnevezés nem lehet üres."),
+        ]
         verbose_name = "szolgáltatás-hirdetés"
         verbose_name_plural = "szolgáltatás-hirdetések"
 

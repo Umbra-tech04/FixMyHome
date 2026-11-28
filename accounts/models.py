@@ -1,8 +1,10 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models.functions import Lower
 
 from accounts.validators import normalize_name, normalize_phone, validate_email_address, validate_name, validate_phone
+from config.db_constraints import coordinate_constraints, not_empty, one_of
 
 
 class Role(models.TextChoices):
@@ -53,6 +55,18 @@ class User(AbstractUser):
 
     objects = UserManager()
 
+    class Meta(AbstractUser.Meta):
+        constraints = [
+            # save() lowercases, but update(), bulk_create() and raw SQL do not: the database itself refuses
+            # "Anna@x.hu" next to "anna@x.hu". unique=True stays (the admin's field error comes from it).
+            models.UniqueConstraint(
+                Lower("email"), name="accounts_user_email_ci_unique",
+                violation_error_message="Ezzel az e-mail-címmel már van fiók.",
+            ),
+            not_empty("email", "accounts_user_email_not_empty", "Az e-mail-cím nem lehet üres."),
+            one_of("role", Role, "accounts_user_role_valid", "Érvénytelen szerepkör."),
+        ]
+
     def clean(self):
         super().clean()
         self.email = self.email.strip().lower()
@@ -79,6 +93,9 @@ class MasterProfile(models.Model):
     latitude = models.FloatField("szélesség", null=True, blank=True)
     longitude = models.FloatField("hosszúság", null=True, blank=True)
     is_available = models.BooleanField("most elérhető", default=True)
+
+    class Meta:
+        constraints = coordinate_constraints("accounts_masterprofile")
 
     def __str__(self):
         return f"{self.user} ({self.profession})"

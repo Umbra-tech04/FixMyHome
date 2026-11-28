@@ -230,11 +230,12 @@ class ExistingAddressRegistrationTests(TestCase):
         self.assertNotRegex(message.body, LINK_RE)  # no verification token for someone else's attempt
 
     def test_already_registered_email_is_sent_at_most_once_an_hour(self):
-        now = time.time()
         for _ in range(3):
             self.register()
         self.assertEqual(len(mail.outbox), 1)
-        with mock.patch("time.time", return_value=now + HOUR + 1):
+        # Read the clock after the registrations: each one hashes a password (about a second), so a time taken
+        # before them plus a one-second margin could still fall inside the hour, and the test failed at random.
+        with mock.patch("time.time", return_value=time.time() + HOUR + 1):
             self.register()
         self.assertEqual(len(mail.outbox), 2)
 
