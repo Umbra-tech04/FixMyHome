@@ -1,10 +1,9 @@
 from django.contrib import messages
-from django.db import transaction
 from django.shortcuts import redirect, render
 
 from accounts.emails import send_existing_account_notice, send_verification_email
 from accounts.forms import RegistrationForm, ResendVerificationForm
-from accounts.models import MasterProfile, User
+from accounts.models import User, mark_email_verified
 from accounts.tokens import user_from_verification_token
 
 VERIFIED_MESSAGE = "Az e-mail-címedet megerősítettük, most már beléphetsz."
@@ -52,11 +51,7 @@ def verify_email(request, token):
     user = user_from_verification_token(token)
     if user is None or not user.is_active:
         return render(request, "accounts/verification_invalid.html", status=400)
-    with transaction.atomic():
-        # Only the first use changes anything, so a reused link cannot undo a master's later "unavailable" choice.
-        if User.objects.filter(pk=user.pk, email_verified=False).update(email_verified=True):
-            # Unverified masters are hidden from the search (is_available=False since registration).
-            MasterProfile.objects.filter(user=user).update(is_available=True)
+    mark_email_verified([user.pk])  # a reused link changes nothing
     messages.success(request, VERIFIED_MESSAGE)
     # The redirect also drops the token from the address bar.
     return redirect("login")
