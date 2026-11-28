@@ -1,9 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth.views import PasswordResetConfirmView
 from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
 
 from accounts.emails import send_existing_account_notice, send_password_reset_email, send_verification_email
-from accounts.forms import EmailAddressForm, RegistrationForm
+from accounts.forms import EmailAddressForm, NewPasswordForm, RegistrationForm
 from accounts.models import User, mark_email_verified
 from accounts.tokens import user_from_verification_token
 
@@ -78,3 +79,11 @@ class PasswordResetConfirm(PasswordResetConfirmView):
 
     reset_url_token = "uj-jelszo"
     template_name = "accounts/password_reset_confirm.html"
+    form_class = NewPasswordForm
+    success_url = reverse_lazy("login")
+
+    def get_user(self, uidb64):
+        # The same accounts as in accounts.emails.password_reset_recipient: Django would also accept one that
+        # was deactivated, or made a superuser, after the e-mail went out.
+        user = super().get_user(uidb64)
+        return user if user is not None and user.is_active and not user.is_superuser else None

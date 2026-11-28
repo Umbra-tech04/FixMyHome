@@ -1,13 +1,17 @@
 import re
 import smtplib
 import time
+from datetime import datetime, timedelta
 from unittest import mock
 
 from django.conf import settings
+from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator
 from django.core import mail
 from django.core.cache import cache
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from accounts.models import User
 from accounts.ratelimit import allow_password_reset_email, allow_verification_email
@@ -192,3 +196,133 @@ class PasswordResetRequestTests(TestCase):
         self.assertRedirects(response, fixed_path, fetch_redirect_response=False)
         self.assertNotIn(token, response["Location"])
         self.assertEqual(self.client.get(fixed_path).status_code, 200)
+
+
+NEW_PASSWORD = "Uj-titkos-jelszo-77"
+INVALID_TITLE = "A link érvénytelen vagy lejárt"
+
+
+def uid_of(user):
+    return urlsafe_base64_encode(force_bytes(user.pk))
+
+
+def reset_link(user, token=None):
+    return reverse("password_reset_confirm", args=[uid_of(user), token or default_token_generator.make_token(user)])
+
+
+def set_password_path(user):
+    return reverse("password_reset_confirm", args=[uid_of(user), "uj-jelszo"])
+
+
+class SetNewPasswordTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.anna = make_user(email="kovacs.anna@example.com", name="Szabó Benedikt", phone="+381641234567")
+
+    def open_link(self, user=None, token=None):
+        """Open the e-mailed link like a browser: the token goes into the session, then the fixed page loads."""
+        user = user or self.anna
+        response = self.client.get(reset_link(user, token), follow=True)
+        return response
+
+    def submit(self, password1=NEW_PASSWORD, password2=None, user=None):
+        return self.client.post(
+            set_password_path(user or self.anna),
+            {"new_password1": password1, "new_password2": password2 if password2 is not None else password1},
+        )
+
+    def test_valid_link_shows_the_new_password_form(self):
+        response = self.open_link()
+        self.assertContains(response, 'name="new_password1"')
+        self.assertContains(response, 'name="new_password2"')
+        self.assertTemplateUsed(response, "base.html")
+
+    def test_new_password_is_saved_and_leads_to_login(self):
+        self.open_link()
+        response = self.submit()
+        self.assertRedirects(response, reverse("login"), fetch_redirect_response=False)
+        self.anna.refresh_from_db()
+        self.assertTrue(self.anna.check_password(NEW_PASSWORD))
+
+    def test_forged_token_shows_the_invalid_page(self):
+        response = self.open_link(token="abc123-0123456789abcdef0123456789abcdef")
+        self.assertContains(response, INVALID_TITLE)
+        self.assertNotContains(response, 'name="new_password1"')
+
+    def test_unknown_user_id_shows_the_invalid_page(self):
+        response = self.client.get(reverse("password_reset_confirm", args=["bm9wZQ", "abc-123"]))
+        self.assertContains(response, INVALID_TITLE)
+
+    def test_token_of_another_user_does_not_work(self):
+        other = make_user(email="bela@example.com", name="Béla")
+        response = self.open_link(token=default_token_generator.make_token(other))
+        self.assertContains(response, INVALID_TITLE)
+
+    def test_expired_link_shows_the_invalid_page(self):
+        made_at = datetime.now() - timedelta(seconds=settings.PASSWORD_RESET_TIMEOUT + 60)
+        with mock.patch.object(PasswordResetTokenGenerator, "_now", return_value=made_at):
+            token = default_token_generator.make_token(self.anna)
+        self.assertContains(self.open_link(token=token), INVALID_TITLE)
+
+    def test_link_is_still_valid_just_before_one_hour(self):
+        made_at = datetime.now() - timedelta(seconds=settings.PASSWORD_RESET_TIMEOUT - 60)
+        with mock.patch.object(PasswordResetTokenGenerator, "_now", return_value=made_at):
+            token = default_token_generator.make_token(self.anna)
+        self.assertContains(self.open_link(token=token), 'name="new_password1"')
+
+    def test_used_link_does_not_work_again(self):
+        token = default_token_generator.make_token(self.anna)
+        self.open_link(token=token)
+        self.submit()
+        response = Client().get(reset_link(self.anna, token), follow=True)
+        self.assertContains(response, INVALID_TITLE)
+
+    def test_fixed_page_without_a_session_token_is_invalid(self):
+        response = self.client.get(set_password_path(self.anna))
+        self.assertContains(response, INVALID_TITLE)
+        self.submit()
+        self.anna.refresh_from_db()
+        self.assertTrue(self.anna.check_password(PASSWORD))
+
+    def test_session_token_only_works_for_its_own_user(self):
+        other = make_user(email="bela@example.com", name="Béla")
+        self.open_link()
+        response = self.client.get(set_password_path(other))
+        self.assertContains(response, INVALID_TITLE)
+
+    def test_inactive_account_cannot_reset(self):
+        token = default_token_generator.make_token(self.anna)
+        User.objects.filter(pk=self.anna.pk).update(is_active=False)
+        self.assertContains(self.open_link(token=token), INVALID_TITLE)
+
+    def test_new_password_follows_the_registration_rules(self):
+        cases = {
+            "kovacs.anna@ex": "password_too_similar",  # e-mail
+            "SzaboBenedikt": "password_too_similar",  # name
+            "telefon+381641234567": "password_too_similar",  # phone
+            "rovid1": "password_too_short",
+            "password123": "password_too_common",
+            "9876543210123": "password_entirely_numeric",
+        }
+        self.open_link()
+        for password, code in cases.items():
+            with self.subTest(password=password):
+                response = self.submit(password)
+                self.assertEqual(response.status_code, 200)
+                codes = [e.code for errors in response.context["form"].errors.as_data().values() for e in errors]
+                self.assertIn(code, codes)
+        self.anna.refresh_from_db()
+        self.assertTrue(self.anna.check_password(PASSWORD))
+
+    def test_the_two_passwords_must_match(self):
+        self.open_link()
+        response = self.submit(NEW_PASSWORD, NEW_PASSWORD + "x")
+        self.assertContains(response, "A két jelszó nem egyezik.")
+        self.anna.refresh_from_db()
+        self.assertTrue(self.anna.check_password(PASSWORD))
+
+    def test_superuser_cannot_reset_even_with_a_valid_token(self):
+        # E.g. promoted after the e-mail went out: superusers use "manage.py changepassword".
+        token = default_token_generator.make_token(self.anna)
+        User.objects.filter(pk=self.anna.pk).update(is_superuser=True, is_staff=True)
+        self.assertContains(self.open_link(token=token), INVALID_TITLE)
